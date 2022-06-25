@@ -2,9 +2,10 @@ package com.mcmiddleearth.mcmescripts.trigger;
 
 import com.mcmiddleearth.entities.ai.goal.Goal;
 import com.mcmiddleearth.entities.entities.McmeEntity;
-import com.mcmiddleearth.entities.entities.VirtualEntity;
 import com.mcmiddleearth.entities.events.events.McmeEntityEvent;
 import com.mcmiddleearth.mcmescripts.debug.Descriptor;
+import com.mcmiddleearth.mcmescripts.party.Party;
+import com.mcmiddleearth.mcmescripts.quest.Quest;
 import com.mcmiddleearth.mcmescripts.script.Script;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -16,6 +17,8 @@ public class TriggerContext {
     private Player player;
     private String message;
     private String name;
+
+    private Party party;
 
     private boolean firstJoin;
 
@@ -31,6 +34,9 @@ public class TriggerContext {
 
     public TriggerContext(Trigger trigger) {
         this.trigger = trigger;
+        if(trigger.getScript() instanceof Quest) {
+            party = ((Quest) trigger.getScript()).getParty();
+        }
         this.location = trigger.getLocation();
         this.player = (trigger.getPlayer()!=null?trigger.getPlayer().selectPlayer(this).stream().findFirst().orElse(null):null);
         this.entity = (trigger.getEntity()!=null?trigger.getEntity().select(this).stream().findFirst().orElse(null):null);
@@ -44,6 +50,7 @@ public class TriggerContext {
     public TriggerContext(TriggerContext context) {
         this.player = context.player;
         this.trigger = context.trigger;
+        this.party = context.party;
         this.message = context.message;
         this.firstJoin = context.firstJoin;
         this.entity = context.entity;
@@ -70,6 +77,19 @@ public class TriggerContext {
         this.player = player;
         getDescriptor().addLine("Override event player: " + player.getName());
         return this;
+    }
+
+    public Party getParty() {
+        return party;
+    }
+
+    public TriggerContext withParty(Party party) {
+        this.party = party;
+        return this;
+    }
+
+    public boolean isQuestContext() {
+        return party != null;
     }
 
     public String getMessage() {

@@ -2,13 +2,12 @@ package com.mcmiddleearth.mcmescripts.quest;
 
 import com.google.gson.JsonObject;
 import com.mcmiddleearth.mcmescripts.compiler.ScriptCompiler;
-import com.mcmiddleearth.mcmescripts.party.Party;
+import com.mcmiddleearth.mcmescripts.compiler.StageCompiler;
+import com.mcmiddleearth.mcmescripts.party.PartyManager;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class QuestLoader{
@@ -17,17 +16,31 @@ public class QuestLoader{
 
     private final File dataFile;
 
-    private final Set<Stage> stages = new HashSet<>();
+    private Set<StageAccess> accessStages;
 
     public QuestLoader(File file) throws IOException {
         dataFile = file;
         JsonObject jsonData = JsonUtils.loadJsonData(dataFile);
         assert jsonData != null;
         questName = ScriptCompiler.getName(jsonData).orElse(System.currentTimeMillis()+"_"+Math.random());
-        stages = StageCompiler.compile(jsonData);
+        accessStages = StageCompiler.readAccessStages(dataFile, jsonData);
     }
 
-    public void checkQuestLoading(Map<Party, QuestData> questData) {
+    public void checkQuestCreation() {
         //check for each party if it triggers this quest, then create quest object and add to QuestManager
+        PartyManager.getOnlineParties().stream()
+                .filter(party->!QuestManager.hasActiveQuest(party,questName))
+                                                .forEach(party -> {
+            for(StageAccess stage: accessStages) {
+                if (stage.isTriggered(party)) {
+                    QuestManager.addQuest(questName, party);
+                    break;
+                }
+            }
+        });
+    }
+
+    public String getQuestName() {
+        return questName;
     }
 }

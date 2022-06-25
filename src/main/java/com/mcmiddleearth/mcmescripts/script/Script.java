@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.mcmiddleearth.entities.EntitiesPlugin;
 import com.mcmiddleearth.entities.entities.McmeEntity;
 import com.mcmiddleearth.mcmescripts.compiler.ConditionCompiler;
+import com.mcmiddleearth.mcmescripts.compiler.EntityCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.ScriptCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.TriggerCompiler;
 import com.mcmiddleearth.mcmescripts.condition.Condition;
@@ -48,7 +49,12 @@ public class Script {
     public void load() throws IOException {
         if(!active) {
             JsonObject jsonData = JsonUtils.loadJsonData(dataFile);
-            ScriptCompiler.load(jsonData,this);
+            assert jsonData!=null;
+            Set<Trigger> triggers = EntityCompiler.compile(jsonData);
+            triggers.forEach(trigger -> trigger.register(this));
+            triggers = TriggerCompiler.compile(jsonData);
+            triggers.forEach(trigger -> trigger.register(this));
+            //ScriptCompiler.load(jsonData,this);
             DebugManager.info(Modules.Script.load(this.getClass()), getDescriptor().print(""));
             active = true;
         }
@@ -106,6 +112,10 @@ public class Script {
 
     public String getName() {
         return name;
+    }
+
+    public File getDataFile() {
+        return dataFile;
     }
 
     public Set<Trigger> getTriggers(String name) {

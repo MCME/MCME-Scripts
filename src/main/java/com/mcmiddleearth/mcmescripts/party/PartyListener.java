@@ -9,11 +9,11 @@ public class PartyListener implements Listener {
 
     @EventHandler
     public void playerJoin(PlayerJoinEvent event) {
-        //create party objects
+        //create party objects and load quests
     }
 
     @EventHandler
     public void playerJoin(PlayerQuitEvent event) {
-        //remove party objects.
+        //remove party objects and unload quests
     }
 }

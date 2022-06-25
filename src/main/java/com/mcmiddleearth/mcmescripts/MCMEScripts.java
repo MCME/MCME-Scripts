@@ -74,6 +74,10 @@ public final class MCMEScripts extends JavaPlugin {
         return instance.getConfig().getInt(key.getKey(),defaultValue);
     }
 
+    public static synchronized long getConfigLong(ConfigKeys key, long defaultValue) {
+        return instance.getConfig().getLong(key.getKey(),defaultValue);
+    }
+
     public static synchronized String getConfigString(ConfigKeys key, String defaultValue) {
         return instance.getConfig().getString(key.getKey(),defaultValue);
     }

@@ -4,7 +4,6 @@ import com.mcmiddleearth.entities.EntitiesPlugin;
 import com.mcmiddleearth.entities.ai.goal.Goal;
 import com.mcmiddleearth.entities.ai.goal.GoalType;
 import com.mcmiddleearth.entities.api.McmeEntityType;
-import com.mcmiddleearth.entities.api.VirtualEntityFactory;
 import com.mcmiddleearth.entities.entities.VirtualEntity;
 import com.mcmiddleearth.entities.entities.composite.SpeechBalloonEntity;
 import com.mcmiddleearth.mcmescripts.debug.DebugManager;
@@ -198,7 +197,12 @@ public abstract class EntitySelector<T> implements Selector<T> {
             case ALL_PLAYERS:
             case ALL_ENTITIES:
             case RANDOM_PLAYER:
-                players.addAll(Bukkit.getOnlinePlayers());
+                //if party is set in context, select players from that party only
+                if(context.isQuestContext()) {
+                    players.addAll(context.getParty().getOnlinePlayers());
+                } else {
+                    players.addAll(Bukkit.getOnlinePlayers());
+                }
                 if(loc!=null) {
                     loc = new Location(loc.getWorld(), getAbsolute(loc.getX(), xRelative, x),
                                 getAbsolute(loc.getY(), yRelative, y),

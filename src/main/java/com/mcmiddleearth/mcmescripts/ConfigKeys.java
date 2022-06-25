@@ -11,7 +11,8 @@ public enum ConfigKeys {
     DRIVE_CLIENT_SECRET("drive.clientSecret"),
     SCRIPT_CHECKER_PERIOD ("scriptCheckerPeriod"),
     TRIGGER_CHECKER_PERIOD ("triggerCheckerPeriod"),
-    START_UP_DELAY ("startUpDelay");
+    START_UP_DELAY ("startUpDelay"),
+    QUEST_LIFETIME ("quest.lifetime");
 
     private final String key;
 
