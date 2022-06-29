@@ -69,7 +69,7 @@ public class ScriptManager {
 //Logger.getGlobal().info("LoadScript: "+script.getName());
 //DebugManager.info(Modules.Script.load(this.getClass()),"Loading script: "+script.getName());
                             script.load();
-                        } catch (IOException | IllegalStateException | JsonSyntaxException e) {
+                        } catch (IllegalStateException | JsonSyntaxException e) {
                             e.printStackTrace();
                         }
                     } else if(!isTriggered && script.isActive()) {

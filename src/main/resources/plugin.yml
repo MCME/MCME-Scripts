@@ -10,14 +10,22 @@ commands:
   scripts:
     description: Manages scripts.
     permission: mcmescripts.user
-    usage: /scripts debug | reload
+    usage: /scripts debug | reload | external | wand | ...
+  party:
+    description: Manages parties.
+    permission: mcmescripts.party
+    usage: /party create | disband | join | leave
 
 permissions:
   mcmescripts.user:
     default: op
     description: Allows to import and export scripts.
+  mcmescripts.party:
+    default: op
+    description: Allows to use party command.
   mcmescripts.admin:
     default: op
     children:
       mcmescripts.user: true
+      mcmescripts.party: true
     description: Allows to enable and disable scripts and do debugging

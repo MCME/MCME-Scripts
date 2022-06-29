@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class Script {
 
-    private final String name;
+    protected String name;
 
     private final Set<Trigger> triggers = new HashSet<>();
     private final Set<McmeEntity> entities = new HashSet<>();
@@ -37,8 +37,11 @@ public class Script {
     private final File dataFile;
 
     public Script(File file) throws IOException {
+        this(file, JsonUtils.loadJsonData(file));
+    }
+
+    protected Script(File file, JsonObject jsonData) {
         dataFile = file;
-        JsonObject jsonData = JsonUtils.loadJsonData(dataFile);
         assert jsonData != null;
         name = ScriptCompiler.getName(jsonData).orElse(System.currentTimeMillis()+"_"+Math.random());
         conditions = ConditionCompiler.compile(jsonData);
@@ -46,17 +49,21 @@ public class Script {
         DebugManager.info(Modules.Script.create(this.getClass()), getDescriptor().print(""));
     }
 
-    public void load() throws IOException {
+    public void load() {
         if(!active) {
-            JsonObject jsonData = JsonUtils.loadJsonData(dataFile);
-            assert jsonData!=null;
-            Set<Trigger> triggers = EntityCompiler.compile(jsonData);
-            triggers.forEach(trigger -> trigger.register(this));
-            triggers = TriggerCompiler.compile(jsonData);
-            triggers.forEach(trigger -> trigger.register(this));
-            //ScriptCompiler.load(jsonData,this);
-            DebugManager.info(Modules.Script.load(this.getClass()), getDescriptor().print(""));
-            active = true;
+            try {
+                JsonObject jsonData = getJsonData();
+                assert jsonData!=null;
+                Set<Trigger> triggers = EntityCompiler.compile(jsonData);
+                triggers.forEach(trigger -> trigger.register(this));
+                triggers = TriggerCompiler.compile(jsonData);
+                triggers.forEach(trigger -> trigger.register(this));
+                //ScriptCompiler.load(jsonData,this);
+                DebugManager.info(Modules.Script.load(this.getClass()), getDescriptor().print(""));
+                active = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -165,6 +172,10 @@ public class Script {
             descriptor.addLine("Entities: --none--");
         }
         return descriptor;
+    }
+
+    public JsonObject getJsonData() throws IOException {
+        return JsonUtils.loadJsonData(dataFile);
     }
 
     /*public String print(String indent) {

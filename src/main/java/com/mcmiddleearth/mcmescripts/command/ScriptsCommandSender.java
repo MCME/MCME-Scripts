@@ -10,6 +10,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Arrays;
@@ -51,6 +52,18 @@ public class ScriptsCommandSender implements McmeCommandSender {
 
     public CommandSender getCommandSender() {
         return sender;
+    }
+
+    public boolean isPlayer() {
+        return sender instanceof Player;
+    }
+
+    public Player getPlayer() {
+        if(sender instanceof Player) {
+            return (Player) sender;
+        } else {
+            return null;
+        }
     }
 
 }

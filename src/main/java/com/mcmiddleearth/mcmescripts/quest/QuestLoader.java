@@ -3,7 +3,7 @@ package com.mcmiddleearth.mcmescripts.quest;
 import com.google.gson.JsonObject;
 import com.mcmiddleearth.mcmescripts.compiler.ScriptCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.StageCompiler;
-import com.mcmiddleearth.mcmescripts.party.PartyManager;
+import com.mcmiddleearth.mcmescripts.quest.party.PartyManager;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 
 import java.io.File;
@@ -28,7 +28,7 @@ public class QuestLoader{
 
     public void checkQuestCreation() {
         //check for each party if it triggers this quest, then create quest object and add to QuestManager
-        PartyManager.getOnlineParties().stream()
+        PartyManager.getParties().stream()
                 .filter(party->!QuestManager.hasActiveQuest(party,questName))
                                                 .forEach(party -> {
             for(StageAccess stage: accessStages) {

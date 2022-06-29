@@ -1,20 +1,15 @@
 package com.mcmiddleearth.mcmescripts.quest;
 
 import com.google.gson.JsonObject;
-import com.mcmiddleearth.entities.entities.McmeEntity;
 import com.mcmiddleearth.mcmescripts.compiler.ConditionCompiler;
-import com.mcmiddleearth.mcmescripts.compiler.StageCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.TriggerCompiler;
 import com.mcmiddleearth.mcmescripts.condition.Condition;
-import com.mcmiddleearth.mcmescripts.party.Party;
-import com.mcmiddleearth.mcmescripts.script.Script;
+import com.mcmiddleearth.mcmescripts.quest.party.Party;
 import com.mcmiddleearth.mcmescripts.trigger.Trigger;
 import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
-import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
 
 public class StageAccess {

@@ -1,5 +1,6 @@
 package com.mcmiddleearth.mcmescripts;
 
+import com.mcmiddleearth.mcmescripts.command.PartyCommandHandler;
 import com.mcmiddleearth.mcmescripts.command.ScriptsCommandHandler;
 import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.listener.ChestListener;
@@ -34,6 +35,7 @@ public final class MCMEScripts extends JavaPlugin {
         enableScripts();
         //BukkitAudiences.create(this);
         setExecutor("scripts", new ScriptsCommandHandler("scripts"));
+        setExecutor("party", new PartyCommandHandler("party"));
     }
 
     @Override

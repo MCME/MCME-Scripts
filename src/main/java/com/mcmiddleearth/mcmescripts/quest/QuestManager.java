@@ -3,17 +3,13 @@ package com.mcmiddleearth.mcmescripts.quest;
 import com.google.gson.JsonSyntaxException;
 import com.mcmiddleearth.mcmescripts.ConfigKeys;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
-import com.mcmiddleearth.mcmescripts.party.Party;
-import com.mcmiddleearth.mcmescripts.party.PartyManager;
+import com.mcmiddleearth.mcmescripts.quest.party.Party;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class QuestManager {
@@ -38,7 +34,7 @@ public class QuestManager {
                 Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Quests folder created.");
             }
         }
-        for(File file : questFolder.listFiles(((dir, name) -> name.endsWith(".json")))) {
+        for(File file : Objects.requireNonNull(questFolder.listFiles(((dir, name) -> name.endsWith(".json"))))) {
             try {
                 QuestLoader questLoader = new QuestLoader(file);
                 //Todo: reject double quest names
@@ -50,25 +46,25 @@ public class QuestManager {
     }
 
     public static void addQuest(String questName, Party party) {
-        addQuest(questName, party, new QuestData(questName, System.currentTimeMillis()));
+        addQuest(party, new QuestData(questName, /*party.getUniqueId(), */System.currentTimeMillis()));
     }
 
-    public static void addQuest(String questName, Party party, QuestData questData) {
+    private static void addQuest(Party party, QuestData questData) {
         try {
-            Quest quest = new Quest(new File(questFolder,questName+".json"),party, questData);
+            Quest quest = new Quest(new File(questFolder,questData.getQuestName()+".json"),party, questData);
             quests.computeIfAbsent(party, k -> new HashSet<>()).add(quest);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void loadQuests(Party party) {
-        PartyManager.getQuestData(party).forEach(questData -> {
-            addQuest(questData.getQuestName(),party,questData);
+    public static void loadQuests(Party party, Party.PartyData partyData) {
+        partyData.questData.forEach(questData -> {
+            addQuest(party,questData);
         });
     }
 
-    public void unloadQuests(Party party) {
+    public static void unloadQuests(Party party) {
         if(quests.containsKey(party)) {
             quests.get(party).forEach(Quest::unload);
             quests.remove(party);

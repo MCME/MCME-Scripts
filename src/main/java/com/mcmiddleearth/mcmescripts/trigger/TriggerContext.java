@@ -4,8 +4,8 @@ import com.mcmiddleearth.entities.ai.goal.Goal;
 import com.mcmiddleearth.entities.entities.McmeEntity;
 import com.mcmiddleearth.entities.events.events.McmeEntityEvent;
 import com.mcmiddleearth.mcmescripts.debug.Descriptor;
-import com.mcmiddleearth.mcmescripts.party.Party;
-import com.mcmiddleearth.mcmescripts.quest.Quest;
+import com.mcmiddleearth.mcmescripts.quest.party.Party;
+import com.mcmiddleearth.mcmescripts.quest.Stage;
 import com.mcmiddleearth.mcmescripts.script.Script;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -34,8 +34,8 @@ public class TriggerContext {
 
     public TriggerContext(Trigger trigger) {
         this.trigger = trigger;
-        if(trigger.getScript() instanceof Quest) {
-            party = ((Quest) trigger.getScript()).getParty();
+        if(trigger.getScript() instanceof Stage) {
+            party = ((Stage) trigger.getScript()).getQuest().getParty();
         }
         this.location = trigger.getLocation();
         this.player = (trigger.getPlayer()!=null?trigger.getPlayer().selectPlayer(this).stream().findFirst().orElse(null):null);

@@ -1,19 +1,15 @@
 package com.mcmiddleearth.mcmescripts.quest;
 
-import com.google.gson.JsonObject;
-import com.mcmiddleearth.mcmescripts.compiler.EntityCompiler;
-import com.mcmiddleearth.mcmescripts.compiler.TriggerCompiler;
-import com.mcmiddleearth.mcmescripts.party.Party;
-import com.mcmiddleearth.mcmescripts.script.Script;
-import com.mcmiddleearth.mcmescripts.trigger.Trigger;
-import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
+import com.mcmiddleearth.mcmescripts.quest.party.Party;
+import com.mcmiddleearth.mcmescripts.quest.tags.AbstractTag;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
-public class Quest extends Script {
+public class Quest {
+
+    private final String name;
 
     private final QuestData data;
     private final Party party;
@@ -21,39 +17,83 @@ public class Quest extends Script {
     //Map of all loaded stages. mapping stage.name -> stage
     private Map<String,Stage> stages;
 
+    private final File dataFile;
+
     public Quest(File file, Party party, QuestData data) throws IOException {
-        super(file);
+        this.name = data.getQuestName();
+        dataFile = file;
         this.party = party;
         this.data = data;
+        data.setLastPlayTime(System.currentTimeMillis());
+        save();
+    }
+
+    public void enableStage(String name) {
+        if(!stages.containsKey(name)) {
+            try {
+                stages.put(name, new Stage(this,name));
+                data.addStage(name);
+                save();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void disableStage(String name) {
+        if(stages.containsKey(name)) {
+            Stage stage = stages.get(name);
+            stage.unload();
+            stages.remove(name);
+            data.removeStage(name);
+            save();
+            //todo: put in disabled state until stage unloads
+        }
     }
 
     public void checkStages() {
         //check if stages needs loading or unloading
-        stages.values().stream().filter(stage -> stage.isTriggered() && !stage.isActive()).forEach(stage -> {
-            JsonObject jsonData = null;
-            try {
-                jsonData = JsonUtils.loadJsonData(getDataFile());
-                assert jsonData!=null;
-                Set<Trigger> triggers = EntityCompiler.compile(jsonData);
-                triggers.forEach(trigger -> trigger.register(this));
-                triggers = TriggerCompiler.compile(jsonData);
-                triggers.forEach(trigger -> trigger.register(this));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        stages.values().stream().filter(stage -> !stage.isTriggered() && stage.isActive()).forEach(stage -> {
-
-        });
+        stages.values().stream().filter(stage -> stage.isTriggered() && !stage.isActive()).forEach(Stage::load);
+        stages.values().stream().filter(stage -> !stage.isTriggered() && stage.isActive()).forEach(Stage::unload);
+        //todo: check for entities and triggers which are used in more than one stage
     }
 
-    @Override
     public void unload() {
-        //todo: unload all stages
         stages.values().forEach(Stage::unload);
+        stages.clear();
+        data.setLastPlayTime(System.currentTimeMillis());
+        save();
+    }
+
+    public void setTag(AbstractTag<?> tag) {
+        data.setTag(tag);
+        save();
+    }
+
+    public void deleteTag(String name) {
+        data.deleteTag(name);
+        save();
     }
 
     public Party getParty() {
         return party;
     }
+
+    public File getDataFile() {
+        return dataFile;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void save() {
+        party.save();
+    }
+
+    public QuestData getQuestData() {
+        return data;
+    }
+
+
 }
