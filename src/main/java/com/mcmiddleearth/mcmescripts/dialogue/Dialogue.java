@@ -10,7 +10,7 @@ public class Dialogue {
     private List<VirtualEntity> speaker = new ArrayList<>();
 
     private DialogueNode firstNode;
-
+    // todo
     //-> ScriptPlayerData private Map<UUID, DialogueNode> currentPlayerNodes = new HashMap<>();
 
     public void answer(String answer) {}
