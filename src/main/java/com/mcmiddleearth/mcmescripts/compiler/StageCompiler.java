@@ -27,10 +27,9 @@ public class StageCompiler {
         JsonObject stages = questData.get(KEY_STAGES).getAsJsonObject();
         Set<StageAccess> accessStages = new HashSet<>();
         stages.entrySet().forEach(entry -> {
-            String name = entry.getKey();
             JsonObject stageData = entry.getValue().getAsJsonObject();
             if(stageData.get(KEY_ACCESS).getAsBoolean()) {
-                accessStages.add(new StageAccess(name, dataFile, stageData));
+                accessStages.add(new StageAccess(dataFile, stageData));
             }
         });
         return accessStages;

@@ -8,10 +8,22 @@ import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Stages are scripts that can be disabled.
+ * todo: Entities of a disabled stage are not instantly removed but stop reacting on players and despawn
+ * todo: when no party player is in their spawn range
+ * todo: after all entities despawned a disabled stage is removed.
+ */
 public class Stage extends Script {
 
+    /**
+     * name of quest this stage belongs to.
+     */
     private final Quest quest;
 
+    /**
+     * Flag to indicate this stage is disabled.
+     */
     private boolean disabled;
 
     public Stage(Quest quest, String name) throws IOException {

@@ -10,12 +10,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
+/**
+ * Manages creation of new instances of a quest.
+ * A new instance is created when a party triggers one of the quests access stages.
+ */
 public class QuestLoader{
 
+    /**
+     * Quest name
+     */
     private final String questName;
 
+    /**
+     * Data file of this quest containing information about entities and events of all stages.
+     */
     private final File dataFile;
 
+    /**
+     * Set of all access stages that can trigger quest creation.
+     */
     private Set<StageAccess> accessStages;
 
     public QuestLoader(File file) throws IOException {

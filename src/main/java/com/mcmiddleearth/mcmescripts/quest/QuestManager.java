@@ -12,19 +12,43 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Manages creation, deletion, loading and unloading of quests.
+ */
 public class QuestManager {
 
-    //Periodically check questLoaders
+    /**
+     * Periodically check:tLoaders
+     * - creation of quest instances
+     * - loading and unloading of quest stages
+     */
     private BukkitTask checker;
 
+    /**
+     * Timestamp of last lifetime check.
+     */
     private static long lastQuestLifetimeCheck = 0L;
+
+    /**
+     * Period of quest lifetime checks.
+     */
     private static long questLifetimeCheckPeriod;
 
+    /**
+     * Map of all quest loaders, one for each quest.
+     * mapping: Quest name -> Quest loader
+     */
     private static final Map<String, QuestLoader> questLoaders = new HashMap<>();
 
-    //quests of online parties
+    /**
+     * Map of all quest instance of all loaded parties
+     * mapping: quest -> Set of all quests this party is doing.
+     */
     private static final Map<Party, Set<Quest>> quests = new HashMap<>();
 
+    /**
+     * Folder for storing quest information (entities and events of all stages)
+     */
     private static final File questFolder = new File(MCMEScripts.getInstance().getDataFolder(),"quests");
 
     public static void readQuests() {
@@ -46,7 +70,7 @@ public class QuestManager {
     }
 
     public static void addQuest(String questName, Party party) {
-        addQuest(party, new QuestData(questName, /*party.getUniqueId(), */System.currentTimeMillis()));
+        addQuest(party, new QuestData(questName, System.currentTimeMillis()));
     }
 
     private static void addQuest(Party party, QuestData questData) {
@@ -83,12 +107,14 @@ public class QuestManager {
 
                 //Loading and unloading of stages
                 quests.forEach((party,quests) -> {
+                    //todo: check if party is active
                     quests.forEach(Quest::checkStages);
                 });
 
-                //Delete outdated quests (long period check!!!)
+                //todo: Delete outdated quests (long period check!!!)
                 if(System.currentTimeMillis() > lastQuestLifetimeCheck + questLifetimeCheckPeriod) {
 
+                    lastQuestLifetimeCheck = System.currentTimeMillis();
                 }
 
 

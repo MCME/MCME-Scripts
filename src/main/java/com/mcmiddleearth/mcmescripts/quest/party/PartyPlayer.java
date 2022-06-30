@@ -5,7 +5,6 @@ import com.google.gson.stream.JsonWriter;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Keyed;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -13,22 +12,45 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Represents a minecraft player as member of parties.
+ * Hold
+ */
 public class PartyPlayer {
 
+    /**
+     * Unique id of represented minecraft player
+     */
     private final UUID uuid;
 
+    /**
+     * Name of represented minecraft player. Might be outdated if player is not online.
+     */
     private String name;
 
-    //filled only for online players
+    /**
+    * Set of all Paries this player is member of .Filled only for online players!
+    */
     private final Set<Party> parties = new HashSet<>();
 
-    //filled only for online players
+    /**
+     * Party that is chosen by this player to be his active party. Might be null when this player is offline.
+     */
     private Party activeParty = null;
 
+    /**
+     * Folder to store player data.
+     */
     private final static File playerFolder = new File(MCMEScripts.getInstance().getDataFolder(),"players");
 
+    /**
+     * File to store data of this player object.
+     */
     private final File dataFile;
 
+    /**
+     * Keys in player data json file.
+     */
     private static final String KEY_ACTIVE = "active",
                                 KEY_PARTIES = "parties";
 

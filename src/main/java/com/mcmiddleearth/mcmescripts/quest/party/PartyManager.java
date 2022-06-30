@@ -9,9 +9,34 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * The party manager handles all operations on parties and their members.
+ * Party objects and also PartyPlayer objects are unique. The party manager ensures there are no two objects
+ * representing the same party or player.
+ *
+ * Handled events:
+ *
+ * Player joins server:
+ * - Where required: Create PartyPlayer object for joining player
+ * - If player has no party yet:
+ *   - Create solo party
+ * - If player already has one or more parties:
+ *   - If required: Load party objects of all parties the joining player is member of.
+ * - Fill set of parties in PartyPlayer object of joining player.
+ *
+ * Player leaves server:
+ * -
+ */
 public class PartyManager {
 
+    /**
+     * Set of all parties with at least one member being online.
+     */
     private final static Set<Party> parties = new HashSet<>();
+
+    /**
+     * Set of all loaded party players
+     */
     private final static Set<PartyPlayer> players = new HashSet<>();
 
     public static Set<Party> getParties() {
@@ -55,6 +80,8 @@ public class PartyManager {
                         parties.add(party);
                         player.addParty(party);
                         party.updateOnlinePlayers();
+                    } else {
+                        //todo: remove ids of disbanded parties from player data file.
                     }
                 }
             });

@@ -7,16 +7,40 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Represents a quest of a party of players. If there are two parties doing the same quest at the same time
+ * there will be two quest objects. One for each party.
+ *
+ * A quest consists of one or several stages. Each stage is a script. If a stage is enabled it can be triggered and loaded
+ * like any script depending on given conditions.
+ */
 public class Quest {
 
-    private final String name;
-
-    private final QuestData data;
+    /**
+     * Party that is doing this quest.
+     */
     private final Party party;
 
-    //Map of all loaded stages. mapping stage.name -> stage
+    /**
+     * Name of this quest.
+     */
+    private final String name;
+
+    /**
+     * Stores information about enabled stages and stored quest tags.
+     */
+    private final QuestData data;
+
+    /**
+     * Map of all loaded stages. mapping stage.name -> stage
+     * IMPORTANT: This map contains only loaded stages but not all enabled states.
+     */
     private Map<String,Stage> stages;
 
+    /**
+     * Data file of this quest that contains information about entities and events of all stages
+     * IMPORTANT: Not to be confused with quest data which are stored in party data files.
+     */
     private final File dataFile;
 
     public Quest(File file, Party party, QuestData data) throws IOException {

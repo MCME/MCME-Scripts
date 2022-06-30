@@ -7,22 +7,40 @@ import com.mcmiddleearth.mcmescripts.quest.tags.*;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Represents progress of a party in a quest.
+ */
 public class QuestData {
 
+    /**
+     * Quest name.
+     */
     private final String questName;
 
-    //private final UUID party;
-
-    //system timestamp when the quest began, needed for lifetime checks.
+    /**
+     * Timestamp of quest creation, needed for lifetime checks.
+     */
     private final long startTime;
+
+    /**
+     * Timestamp of last activity, needed for lifetime checks.
+     */
     private long lastPlayTime;
 
-    //List of all enabled stages, ordered by activation time
+    /**
+     * List of all enabled stages, ordered by activation time
+     */
     private final List<String> stages = new ArrayList<>();
 
-    //mapping tag.name -> tag
+    /**
+     * Map of all stored tags related to this quest.
+     * mapping: tag.name -> tag
+     */
     private final Map<String, AbstractTag<?>> tags = new HashMap<>();
 
+    /**
+     * Keys in quest data storage json.
+     */
     private static final String KEY_TAGS = "tags",
                                 KEY_STAGES = "stages",
                                 KEY_START_TIME = "start_time",

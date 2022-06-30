@@ -14,24 +14,58 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * A party is a group of players who do quests together.
+ *
+ * A party need to be active in order to do quests. There are two possible rule for a party to be active:
+ * 1. Any of the players is online and has this party chosen as active party
+ * 2. All players are online and have this party chosen as active party
+ */
 public class Party {
 
-    //flag to indicate if a party is active (can do quests) only if all members are online and have this party activated
-    private boolean requireAllActive = true;
-
+    /**
+     * Unique identifier of this party. Is created randomly when the party is created.
+     */
     private final UUID uuid;
 
+    /**
+     * Name of this party, can be chosen freely. There may be more than one party with the same name.
+     */
     private String name;
 
+    /**
+     * Flag to indicate if a party is active (can do quests) only if all members are online and have this party activated
+     */
+    private boolean requireAllActive = true;
+
+    /**
+     * List of all players in this party no matter if they are online or not.
+     */
     private final List<PartyPlayer> players = new ArrayList<>();
+
+    /**
+     * Set of all players in this party who are online.
+     */
     private Set<Player> onlinePlayers = new HashSet<>();
 
+    /**
+     * Creator of this party. If the founder leaves the party the next oldest player in this party becomes new founder.
+     */
     private PartyPlayer founder;
 
+    /**
+     * Folder to store party data.
+     */
     private static final File partiesFolder = new File(MCMEScripts.getInstance().getDataFolder(),"parties");
 
+    /**
+     * File to store data of this party.
+     */
     private final File dataFile;
 
+    /**
+     * Keys in party data json file.
+     */
     private static final String KEY_QUESTS = "quests",
                                 KEY_MEMBERS = "members",
                                 KEY_FOUNDER = "founder",
