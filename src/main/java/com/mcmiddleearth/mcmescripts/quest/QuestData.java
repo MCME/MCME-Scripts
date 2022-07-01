@@ -46,14 +46,15 @@ public class QuestData {
                                 KEY_START_TIME = "start_time",
                                 KEY_LAST_PLAYED = "last_played";
 
-    public QuestData(String questName, long startTime) {
+    public QuestData(String questName, String accessStage, long startTime) {
         this.questName = questName;
         this.startTime = startTime;
+        if(accessStage!=null) stages.add(accessStage);
     }
 
     public static QuestData loadQuestData(String questName, JsonObject jsonObject) {
         long startTime = jsonObject.get(KEY_START_TIME).getAsLong();
-        QuestData result = new QuestData(questName, startTime);
+        QuestData result = new QuestData(questName, null, startTime);
         long lastPlayed = jsonObject.get(KEY_LAST_PLAYED).getAsLong();
         result.setLastPlayTime(lastPlayed);
         jsonObject.get(KEY_STAGES).getAsJsonArray().forEach(stage-> result.addStage(stage.getAsString()));
@@ -111,6 +112,10 @@ public class QuestData {
         stages.remove(name);
     }
 
+    public boolean isStageEnabled(String name) {
+        return stages.contains(name);
+    }
+
     public void setTag(String name, String value) {
         tags.put(name, new StringTag(name, value));
     }
@@ -121,6 +126,10 @@ public class QuestData {
 
     public void deleteTag(String name) {
         tags.remove(name);
+    }
+
+    public boolean hasTag(String name) {
+        return tags.containsKey(name);
     }
 
     private void save() {

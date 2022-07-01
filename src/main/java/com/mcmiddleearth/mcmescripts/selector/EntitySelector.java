@@ -323,6 +323,7 @@ public abstract class EntitySelector<T> implements Selector<T> {
                                 return (VirtualEntity)entity;
                             }).collect(Collectors.toSet()));
                 }
+                break;
             default:
                 DebugManager.warn(Modules.Selector.select(this.getClass()),
                         "Selector: "+getSelector()

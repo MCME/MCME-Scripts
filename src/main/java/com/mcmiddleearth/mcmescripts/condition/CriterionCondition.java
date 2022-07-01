@@ -18,6 +18,7 @@ public class CriterionCondition<T> extends Condition {
     public boolean test(TriggerContext context) {
         int size = selector.select(context).size();
         context.getDescriptor() //.add(super.getDescriptor()).indent()
+                .addLine("Condition description: ").indent().add(getDescriptor()).outdent()
                 .addLine("Selected quantity: "+size);
         boolean result = test.apply(size);
         context.getDescriptor().addLine("Test result: "+result).outdent();

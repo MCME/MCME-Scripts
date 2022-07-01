@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.mcmiddleearth.mcmescripts.compiler.ConditionCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.TriggerCompiler;
 import com.mcmiddleearth.mcmescripts.condition.Condition;
+import com.mcmiddleearth.mcmescripts.debug.Descriptor;
 import com.mcmiddleearth.mcmescripts.quest.party.Party;
 import com.mcmiddleearth.mcmescripts.trigger.Trigger;
 import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
@@ -17,6 +18,7 @@ import java.util.Set;
  */
 public class StageAccess {
 
+    private final String name;
     /**
      * Conditions that need to be met to start a new quest.
      */
@@ -29,10 +31,11 @@ public class StageAccess {
     private boolean metAllConditions = true;
 
     public StageAccess(String name, File dataFile) throws IOException {
-        this(dataFile, Stage.getJsonData(name, dataFile));
+        this(name, Stage.getJsonData(name, dataFile));
     }
 
-    public StageAccess(File dataFile, JsonObject jsonData) {
+    public StageAccess(String name, JsonObject jsonData) {
+        this.name = name;
         conditions = ConditionCompiler.compile(jsonData);
         if(!conditions.isEmpty()) metAllConditions = TriggerCompiler.getMetAllConditions(jsonData);
     }
@@ -53,4 +56,24 @@ public class StageAccess {
         }
         return metAllConditions;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public Descriptor getDescriptor() {
+        Descriptor descriptor = new Descriptor("Stage: "+name)
+                .indent()
+                .addLine("Met all conditions: "+metAllConditions);
+        if(!conditions.isEmpty()) {
+            descriptor.addLine("Conditions:").indent();
+            conditions.forEach(condition -> descriptor.add(condition.getDescriptor()));
+            descriptor.outdent();
+        } else {
+            descriptor.addLine("Conditions: --none--");
+        }
+        return descriptor;
+    }
+
+
 }

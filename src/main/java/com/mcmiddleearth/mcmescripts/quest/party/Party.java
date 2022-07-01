@@ -3,6 +3,7 @@ package com.mcmiddleearth.mcmescripts.quest.party;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
+import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.quest.QuestData;
 import com.mcmiddleearth.mcmescripts.quest.QuestManager;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +72,14 @@ public class Party {
                                 KEY_MEMBERS = "members",
                                 KEY_FOUNDER = "founder",
                                 KEY_NAME    = "name";
+
+    static {
+        if(!partiesFolder.exists()) {
+            if(partiesFolder.mkdir()) {
+                Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Party folder created.");
+            }
+        }
+    }
 
     public Party(UUID uuid, String name, PartyPlayer founder) {
         this.founder = founder;
@@ -181,9 +191,11 @@ public class Party {
 
     public void save() {
         //save party data file including quest data
+Logger.getGlobal().info("Save party data file!");
+DebugManager.printStackTrace();
         try(JsonWriter writer = JsonUtils.getGson().newJsonWriter(new FileWriter(dataFile))) {
             writer.beginObject()
-                .name(KEY_FOUNDER).value(founder.getUniqueId().toString())
+                .name(KEY_NAME).value(name)
                 .name(KEY_FOUNDER).value(founder.getUniqueId().toString())
                 .name(KEY_MEMBERS).beginArray();
                     for(PartyPlayer player: players) { writer.value(player.getUniqueId().toString());}

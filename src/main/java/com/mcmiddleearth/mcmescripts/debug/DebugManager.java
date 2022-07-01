@@ -219,4 +219,12 @@ public class DebugManager {
             }).forEach(player -> player.sendMessage(finalColor +message));
     }
 
+    public static void printStackTrace() {
+        try {
+            throw new Exception("printStackTrace!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }

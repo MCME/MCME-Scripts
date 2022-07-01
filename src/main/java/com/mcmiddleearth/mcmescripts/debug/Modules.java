@@ -14,6 +14,10 @@ public enum Modules {
     SCRIPT_READ         ("script.read"),
     SCRIPT_LOAD         ("script.load"),
     SCRIPT_UNLOAD       ("script.unload"),
+    QUEST_READ          ("quest.read"),
+    QUEST_CREATE        ("quest.create"),
+    QUEST_LOAD          ("quest.load"),
+    QUEST_UNLOAD        ("quest.unload"),
     SELECTOR_SELECT     ("selector.select"),
     SELECTOR_CREATE     ("selector.create"),
     LOCATION_CREATE     ("location.create"),
@@ -86,6 +90,24 @@ public enum Modules {
         public static String unload(Class clazz) {
             return SCRIPT_UNLOAD.module+"."+clazz.getSimpleName();
         }
+    }
+
+    public static class Quest {
+        public static String create(Class clazz) {
+            return QUEST_CREATE.module+"."+clazz.getSimpleName();
+        }
+
+        public static String load(Class clazz) {
+            return QUEST_LOAD.module+"."+clazz.getSimpleName();
+        }
+
+        public static String unload(Class clazz) {
+            return QUEST_UNLOAD.module+"."+clazz.getSimpleName();
+        }
+    }
+
+    public static class QuestLoader {
+        public static String create(Class clazz) { return QUEST_READ.module+"."+clazz.getSimpleName(); }
     }
 
     public static class Selector {

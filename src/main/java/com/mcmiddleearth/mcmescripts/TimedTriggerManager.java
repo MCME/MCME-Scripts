@@ -22,7 +22,7 @@ TimedTriggerManager {
             public void run() {
                 new HashSet<>(triggers).forEach(TimedTrigger::call);
             }
-        }.runTaskTimer(MCMEScripts.getInstance(), MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,100),
+        }.runTaskTimer(MCMEScripts.getInstance(), 5,
                                                   MIN_TRIGGER_CHECK_PERIOD);
     }
 

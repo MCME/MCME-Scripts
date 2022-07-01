@@ -5,6 +5,7 @@ import com.mcmiddleearth.mcmescripts.quest.tags.AbstractTag;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -35,7 +36,7 @@ public class Quest {
      * Map of all loaded stages. mapping stage.name -> stage
      * IMPORTANT: This map contains only loaded stages but not all enabled states.
      */
-    private Map<String,Stage> stages;
+    private final Map<String,Stage> stages = new HashMap<>();
 
     /**
      * Data file of this quest that contains information about entities and events of all stages
@@ -75,6 +76,10 @@ public class Quest {
         }
     }
 
+    public boolean isStageEnabled(String name) {
+        return data.isStageEnabled(name);
+    }
+
     public void checkStages() {
         //check if stages needs loading or unloading
         stages.values().stream().filter(stage -> stage.isTriggered() && !stage.isActive()).forEach(Stage::load);
@@ -97,6 +102,10 @@ public class Quest {
     public void deleteTag(String name) {
         data.deleteTag(name);
         save();
+    }
+
+    public boolean hasTag(String name) {
+        return data.hasTag(name);
     }
 
     public Party getParty() {

@@ -23,13 +23,16 @@ public class StageCompiler {
         }
     }
 
-    public static Set<StageAccess> readAccessStages(File dataFile, JsonObject questData) {
+    public static Set<StageAccess> readAccessStages(JsonObject questData) {
         JsonObject stages = questData.get(KEY_STAGES).getAsJsonObject();
         Set<StageAccess> accessStages = new HashSet<>();
         stages.entrySet().forEach(entry -> {
+            String name = entry.getKey();
             JsonObject stageData = entry.getValue().getAsJsonObject();
-            if(stageData.get(KEY_ACCESS).getAsBoolean()) {
-                accessStages.add(new StageAccess(dataFile, stageData));
+            JsonElement accessJson = stageData.get(KEY_ACCESS);
+            if(accessJson!=null && accessJson.isJsonPrimitive()
+               && accessJson.getAsJsonPrimitive().isBoolean() && accessJson.getAsBoolean()) {
+                accessStages.add(new StageAccess(name, stageData));
             }
         });
         return accessStages;

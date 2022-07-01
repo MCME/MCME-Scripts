@@ -29,7 +29,7 @@ public class ScriptManager {
                 Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Scripts folder created.");
             }
         }
-        for(File file : scriptFolder.listFiles(((dir, name) -> name.endsWith(".json")))) {
+        for(File file : Objects.requireNonNull(scriptFolder.listFiles(((dir, name) -> name.endsWith(".json"))))) {
             try {
                 addScript(file);
             } catch (NullPointerException | IOException | IllegalStateException | JsonSyntaxException e) {
@@ -79,8 +79,8 @@ public class ScriptManager {
                     }
                 });
             }
-        }.runTaskTimer(MCMEScripts.getInstance(),MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,95),
-                                                 MCMEScripts.getConfigInt(ConfigKeys.SCRIPT_CHECKER_PERIOD,100));
+        }.runTaskTimer(MCMEScripts.getInstance(),1,
+                       MCMEScripts.getConfigInt(ConfigKeys.SCRIPT_CHECKER_PERIOD,100));
     }
 
     public void stopChecker() {

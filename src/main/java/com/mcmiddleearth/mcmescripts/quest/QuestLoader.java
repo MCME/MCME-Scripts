@@ -3,12 +3,16 @@ package com.mcmiddleearth.mcmescripts.quest;
 import com.google.gson.JsonObject;
 import com.mcmiddleearth.mcmescripts.compiler.ScriptCompiler;
 import com.mcmiddleearth.mcmescripts.compiler.StageCompiler;
+import com.mcmiddleearth.mcmescripts.debug.DebugManager;
+import com.mcmiddleearth.mcmescripts.debug.Descriptor;
+import com.mcmiddleearth.mcmescripts.debug.Modules;
 import com.mcmiddleearth.mcmescripts.quest.party.PartyManager;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Manages creation of new instances of a quest.
@@ -29,24 +33,27 @@ public class QuestLoader{
     /**
      * Set of all access stages that can trigger quest creation.
      */
-    private Set<StageAccess> accessStages;
+    private final Set<StageAccess> accessStages;
 
     public QuestLoader(File file) throws IOException {
         dataFile = file;
         JsonObject jsonData = JsonUtils.loadJsonData(dataFile);
         assert jsonData != null;
         questName = ScriptCompiler.getName(jsonData).orElse(System.currentTimeMillis()+"_"+Math.random());
-        accessStages = StageCompiler.readAccessStages(dataFile, jsonData);
+        accessStages = StageCompiler.readAccessStages(jsonData);
+        DebugManager.info(Modules.QuestLoader.create(this.getClass()), getDescriptor().print(""));
     }
 
     public void checkQuestCreation() {
         //check for each party if it triggers this quest, then create quest object and add to QuestManager
+Logger.getGlobal().info("Check quest creation: "+PartyManager.getParties().size()+ " parties.");
         PartyManager.getParties().stream()
                 .filter(party->!QuestManager.hasActiveQuest(party,questName))
                                                 .forEach(party -> {
             for(StageAccess stage: accessStages) {
+Logger.getGlobal().info("Access stage: "+stage.getName()+" triggerd: "+stage.isTriggered(party));
                 if (stage.isTriggered(party)) {
-                    QuestManager.addQuest(questName, party);
+                    QuestManager.addQuest(questName, stage.getName(), party);
                     break;
                 }
             }
@@ -56,4 +63,20 @@ public class QuestLoader{
     public String getQuestName() {
         return questName;
     }
+
+    public Descriptor getDescriptor() {
+        Descriptor descriptor = new Descriptor("Quest: "+questName)
+                .indent()
+                .addLine("Data file: "+dataFile.getName())
+                .addLine("Access stages: ").indent();
+        if(accessStages.isEmpty()) {
+            descriptor.addLine("--none--").outdent();
+        } else {
+            accessStages.forEach(stage -> descriptor.add(stage.getDescriptor()));
+        }
+        descriptor.outdent().outdent();
+        return descriptor;
+    }
+
+
 }

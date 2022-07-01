@@ -91,11 +91,11 @@ public class ScriptsCommandHandler extends AbstractCommandHandler implements Tab
                     context.getSource().sendMessage("Reloading scripts ....");
                     DebugManager.info(Modules.Command.execute(this.getClass()),"Reloading scripts ....");
                     MCMEScripts.getInstance().disableScripts();
-                    MCMEScripts.getInstance().reloadConfig();
-                    MCMEScripts.getInstance().enableScripts();
-                    Bukkit.getScheduler().runTaskLater(MCMEScripts.getInstance(), () -> context.getSource().sendMessage("... scripts reloaded!"),
-                            MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,95));
-                            DebugManager.info(Modules.Command.execute(this.getClass()),"... scripts reloaded!");
+                    Bukkit.getScheduler().runTaskLater(MCMEScripts.getInstance(), () -> {
+                            MCMEScripts.getInstance().reloadConfig();
+                            MCMEScripts.getInstance().enableScripts();
+                            context.getSource().sendMessage("... scripts reloaded!");
+                            DebugManager.info(Modules.Command.execute(this.getClass()),"... scripts reloaded!");}, 5);
                     return 0; }))
             .then(HelpfulLiteralBuilder.literal("disable")
                 .requires(sender -> ((ScriptsCommandSender)sender).getCommandSender().hasPermission(Permission.ADMIN.getNode()))
@@ -110,9 +110,7 @@ public class ScriptsCommandHandler extends AbstractCommandHandler implements Tab
                     context.getSource().sendMessage("Enabling scripts ....");
                     DebugManager.info(Modules.Command.execute(this.getClass()),"Enabling scripts ....");
                     MCMEScripts.getInstance().enableScripts();
-                    Bukkit.getScheduler().runTaskLater(MCMEScripts.getInstance(), () -> context.getSource().sendMessage("... scripts enabled!"),
-                            MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,95));
-                            DebugManager.info(Modules.Command.execute(this.getClass()),"... scripts enabled!");
+                    DebugManager.info(Modules.Command.execute(this.getClass()),"... scripts enabled!");
                     return 0; }))
             .then(HelpfulLiteralBuilder.literal("wand")
                 .requires(sender -> ((ScriptsCommandSender)sender).getCommandSender() instanceof Player)

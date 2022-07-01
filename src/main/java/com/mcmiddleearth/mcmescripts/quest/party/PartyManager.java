@@ -57,13 +57,7 @@ public class PartyManager {
         Set<UUID> partyIds = player.loadPartyIds();
         if(partyIds.isEmpty()) {
             //Create a new party for solo questing
-            Party party = new Party(playerId, Bukkit.getOfflinePlayer(playerId).getName() + "'s solo", player);
-            parties.add(party);
-            addPlayerToParty(player, party);
-            player.setActiveParty(party);
-            party.updateOnlinePlayers();
-            //QuestManager.loadQuests(party); there can't be any quests as the party is new
-            //player.addParty(party);
+            createSoloParty(player);
         } else {
             //Check if all parties the joining player is part of do exists. Create missing party objects.
             partyIds.forEach(partyId -> {
@@ -80,29 +74,25 @@ public class PartyManager {
                         parties.add(party);
                         player.addParty(party);
                         party.updateOnlinePlayers();
-                    } else {
-                        //todo: remove ids of disbanded parties from player data file.
                     }
                 }
             });
-            //read active party from player data file.
-            player.setActiveParty(getParty(player.loadActivePartyId()));
+            if(player.getParties().isEmpty()) {
+                createSoloParty(player);
+            } else {
+                //read active party from player data file.
+                player.setActiveParty(getParty(player.loadActivePartyId()));
+                player.save();
+            }
         }
-        //save player data to add new party membership or remove membership of disbanded party
-        player.save();
     }
 
     public static void playerLeave(UUID playerId) {
         PartyPlayer player = getOrCreatePartyPlayer(playerId);
-        player.getParties().stream()
-                .filter(party -> party.getPartyPlayers().stream()
-                        .noneMatch(partyPlayer -> !partyPlayer.getUniqueId().equals(playerId) && partyPlayer.isOnline()))
-                .forEach(party -> {
-            parties.remove(party);
-            QuestManager.unloadQuests(party);
-        });
-        players.remove(player);
+        //unload parties where leaving player is only member
+        unloadUnusedParties(player);
         player.getParties().clear();
+        unloadUnusedPlayer(player);
         new BukkitRunnable(){
             @Override
             public void run() {
@@ -111,24 +101,11 @@ public class PartyManager {
         }.runTaskLater(MCMEScripts.getInstance(), 2);
     }
 
-    private static Party loadParty(UUID partyId) {
-        //load party data from party file and add all players and return null if file doesn't exist
-        Party.PartyData partyData = Party.loadPartyData(partyId);
-        if(partyData!=null) {
-            Party party = new Party(partyId, partyData.name, getOrCreatePartyPlayer(partyData.founder));
-            partyData.members.forEach(memberId -> {
-                PartyPlayer player = getOrCreatePartyPlayer(memberId);
-                party.addPlayer(player);
-            });
-            QuestManager.loadQuests(party, partyData);
-        }
-        return null;
-    }
-
     public static void createParty(String name, PartyPlayer founder) {
         Party party = new Party(UUID.randomUUID(), name, founder);
         addPlayerToParty(founder, party);
         founder.setActiveParty(party);
+        founder.save();
         parties.add(party);
         party.updateOnlinePlayers();
         party.save();
@@ -137,11 +114,13 @@ public class PartyManager {
     public static void disbandParty(UUID partyId) {
         Party party = parties.stream().filter(search -> search.getUniqueId().equals(partyId)).findAny().orElse(null);
         if(party != null) {
+            QuestManager.unloadQuests(party);
+            parties.remove(party);
             players.forEach(player -> {
                 removePlayerFromParty(player, party);
                 player.save();
+                unloadUnusedPlayer(player);
             });
-            parties.remove(party);
             party.deleteFile();
         }
     }
@@ -162,15 +141,35 @@ public class PartyManager {
         if(player.isMember(party)) {
             removePlayerFromParty(player, party);
             player.save();
+            unloadUnusedPlayer(player);
             if(party.getPartyPlayers().isEmpty()) {
                 disbandParty(party.getUniqueId());
             } else {
                 party.updateOnlinePlayers();
                 party.save();
+                unloadUnusedParty(player, party);
             }
             return true;
         }
         return false;
+    }
+
+    private static void createSoloParty(PartyPlayer player) {
+        createParty(Bukkit.getOfflinePlayer(player.getUniqueId()).getName() + "'s solo", player);
+    }
+
+    private static Party loadParty(UUID partyId) {
+        //load party data from party file and add all players and return null if file doesn't exist
+        Party.PartyData partyData = Party.loadPartyData(partyId);
+        if(partyData!=null) {
+            Party party = new Party(partyId, partyData.name, getOrCreatePartyPlayer(partyData.founder));
+            partyData.members.forEach(memberId -> {
+                PartyPlayer player = getOrCreatePartyPlayer(memberId);
+                party.addPlayer(player);
+            });
+            QuestManager.loadQuests(party, partyData);
+        }
+        return null;
     }
 
     private static void addPlayerToParty(PartyPlayer player, Party party) {
@@ -192,5 +191,30 @@ public class PartyManager {
         return partyPlayer;
     }
 
-    //todo: remove unused parties (long period check)
+    public static Set<PartyPlayer> getPlayers() {
+        return players;
+    }
+
+    private static void unloadUnusedPlayer(PartyPlayer player) {
+        if(parties.stream().noneMatch(party -> party.getPartyPlayers().contains(player))) {
+            players.remove(player);
+        }
+    }
+
+    private static void unloadUnusedParties(PartyPlayer leavingPlayer) {
+        leavingPlayer.getParties().forEach(party -> {
+                unloadUnusedParty(leavingPlayer, party);
+            });
+    }
+
+    private static void unloadUnusedParty(PartyPlayer leavingPlayer, Party party) {
+        UUID playerId = leavingPlayer.getUniqueId();
+        if(party.getPartyPlayers().stream()
+                .noneMatch(partyPlayer -> !partyPlayer.getUniqueId().equals(playerId) && partyPlayer.isOnline())) {
+            QuestManager.unloadQuests(party);
+            parties.remove(party);
+        }
+    }
+
+    //todo: delete unused parties (long period check)
 }

@@ -10,12 +10,17 @@ import com.mcmiddleearth.entities.effect.Explosion;
 import com.mcmiddleearth.entities.entities.composite.bones.SpeechBalloonLayout;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
 import com.mcmiddleearth.mcmescripts.action.*;
+import com.mcmiddleearth.mcmescripts.action.quest.StageDisableAction;
+import com.mcmiddleearth.mcmescripts.action.quest.StageEnableAction;
+import com.mcmiddleearth.mcmescripts.action.quest.TagDeleteAction;
+import com.mcmiddleearth.mcmescripts.action.quest.TagSetAction;
 import com.mcmiddleearth.mcmescripts.component.EnchantmentChoice;
 import com.mcmiddleearth.mcmescripts.component.ItemFilter;
 import com.mcmiddleearth.mcmescripts.component.WrappedEnchantment;
 import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.debug.Modules;
 import com.mcmiddleearth.mcmescripts.looting.ItemChoice;
+import com.mcmiddleearth.mcmescripts.quest.tags.StringTag;
 import com.mcmiddleearth.mcmescripts.selector.McmeEntitySelector;
 import com.mcmiddleearth.mcmescripts.selector.PlayerSelector;
 import com.mcmiddleearth.mcmescripts.selector.VirtualEntitySelector;
@@ -93,6 +98,7 @@ public class ActionCompiler {
                                 KEY_X_EDGE          = "x_edge",
                                 KEY_SPREAD          = "spread",
 
+                                KEY_TAG_VALUE        = "value",
 
                                 VALUE_REGISTER_TRIGGER      = "register_event",
                                 VALUE_UNREGISTER_TRIGGER    = "unregister_event",
@@ -127,7 +133,12 @@ public class ActionCompiler {
                                 VALUE_REMOVE_ENCHANTMENT    = "remove_enchantment",
                                 VALUE_BOSS_BAR_ADD          = "boss_bar_add",
                                 VALUE_BOSS_BAR_REMOVE       = "boss_bar_remove",
-                                VALUE_BOSS_BAR_EDIT         = "boss_bar_edit";
+                                VALUE_BOSS_BAR_EDIT         = "boss_bar_edit",
+
+                                VALUE_STAGE_ENABLE          = "enable_stage",
+                                VALUE_STAGE_DISABLE         = "disable_stage",
+                                VALUE_TAG_SET               = "set_tag",
+                                VALUE_TAG_DELETE            = "delete_tag";
 
 
     public static Collection<Action> compile(JsonObject jsonData) {
@@ -606,6 +617,39 @@ public class ActionCompiler {
                 }
                 playerSelector = SelectorCompiler.compilePlayerSelector(jsonObject);
                 action = new BossBarRemoveAction(playerSelector, new NamespacedKey(MCMEScripts.getInstance(),name));
+                break;
+            case VALUE_STAGE_ENABLE:
+                name = PrimitiveCompiler.compileString(jsonObject.get(KEY_NAME),null);
+                if(name==null) {
+                    DebugManager.warn(Modules.Action.create(ActionCompiler.class),"Can't compile "+VALUE_STAGE_ENABLE+" action. Missing stage name.");
+                    return Optional.empty();
+                }
+                action = new StageEnableAction(name);
+                break;
+            case VALUE_STAGE_DISABLE:
+                name = PrimitiveCompiler.compileString(jsonObject.get(KEY_NAME),null);
+                if(name==null) {
+                    DebugManager.warn(Modules.Action.create(ActionCompiler.class),"Can't compile "+VALUE_STAGE_DISABLE+" action. Missing stage name.");
+                    return Optional.empty();
+                }
+                action = new StageDisableAction(name);
+                break;
+            case VALUE_TAG_SET:
+                name = PrimitiveCompiler.compileString(jsonObject.get(KEY_NAME),null);
+                String value = PrimitiveCompiler.compileString(jsonObject.get(KEY_TAG_VALUE), null);
+                if(name==null) {
+                    DebugManager.warn(Modules.Action.create(ActionCompiler.class),"Can't compile "+VALUE_TAG_SET+" action. Missing tag name.");
+                    return Optional.empty();
+                }
+                action = new TagSetAction(new StringTag(name,value));
+                break;
+            case VALUE_TAG_DELETE:
+                name = PrimitiveCompiler.compileString(jsonObject.get(KEY_NAME),null);
+                if(name==null) {
+                    DebugManager.warn(Modules.Action.create(ActionCompiler.class),"Can't compile "+VALUE_TAG_DELETE+" action. Missing tag name.");
+                    return Optional.empty();
+                }
+                action = new TagDeleteAction(name);
                 break;
             default:
                 DebugManager.severe(Modules.Action.create(ActionCompiler.class),"Can't compile action. Unsupported action type.");

@@ -3,7 +3,11 @@ package com.mcmiddleearth.mcmescripts.quest;
 import com.google.gson.JsonSyntaxException;
 import com.mcmiddleearth.mcmescripts.ConfigKeys;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
+import com.mcmiddleearth.mcmescripts.debug.DebugManager;
+import com.mcmiddleearth.mcmescripts.debug.Descriptor;
+import com.mcmiddleearth.mcmescripts.debug.Modules;
 import com.mcmiddleearth.mcmescripts.quest.party.Party;
+import com.mcmiddleearth.mcmescripts.quest.party.PartyManager;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -22,7 +26,7 @@ public class QuestManager {
      * - creation of quest instances
      * - loading and unloading of quest stages
      */
-    private BukkitTask checker;
+    private static BukkitTask checker;
 
     /**
      * Timestamp of last lifetime check.
@@ -52,14 +56,16 @@ public class QuestManager {
     private static final File questFolder = new File(MCMEScripts.getInstance().getDataFolder(),"quests");
 
     public static void readQuests() {
+        removeQuests();
         questLifetimeCheckPeriod = MCMEScripts.getConfigLong(ConfigKeys.QUEST_LIFETIME, 1000*3600*24);
         if(!questFolder.exists()) {
             if(questFolder.mkdir()) {
-                Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Quests folder created.");
+                Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Quest folder created.");
             }
         }
         for(File file : Objects.requireNonNull(questFolder.listFiles(((dir, name) -> name.endsWith(".json"))))) {
             try {
+Logger.getGlobal().info("create quest loader: "+file.getName());
                 QuestLoader questLoader = new QuestLoader(file);
                 //Todo: reject double quest names
                 questLoaders.put(questLoader.getQuestName(), questLoader);
@@ -67,10 +73,20 @@ public class QuestManager {
                 e.printStackTrace();
             }
         }
+        PartyManager.getParties().forEach(party -> {
+            Party.PartyData partyData = Party.loadPartyData(party.getUniqueId());
+            if(partyData!=null) {
+                loadQuests(party, partyData);
+            }
+        });
     }
 
-    public static void addQuest(String questName, Party party) {
-        addQuest(party, new QuestData(questName, System.currentTimeMillis()));
+    public static void addQuest(String questName, String accessStage, Party party) {
+        DebugManager.info(Modules.Quest.create(QuestManager.class),
+                          new Descriptor("Quest: "+questName).indent()
+                                .addLine("Access stage: "+accessStage)
+                                .addLine("Party: "+party.getName()).print(""));
+        addQuest(party, new QuestData(questName, accessStage, System.currentTimeMillis()));
     }
 
     private static void addQuest(Party party, QuestData questData) {
@@ -88,6 +104,13 @@ public class QuestManager {
         });
     }
 
+    public static void removeQuests() {
+        Set<Party> parties = new HashSet<>(quests.keySet());
+        parties.forEach(QuestManager::unloadQuests);
+        quests.clear();
+        questLoaders.clear();
+    }
+
     public static void unloadQuests(Party party) {
         if(quests.containsKey(party)) {
             quests.get(party).forEach(Quest::unload);
@@ -95,7 +118,7 @@ public class QuestManager {
         }
     }
 
-    public void startChecker() {
+    public static void startChecker() {
         stopChecker();
         checker = new BukkitRunnable() {
             @Override
@@ -117,13 +140,21 @@ public class QuestManager {
                     lastQuestLifetimeCheck = System.currentTimeMillis();
                 }
 
+Logger.getGlobal().info("parties: "+PartyManager.getParties().size());
+Logger.getGlobal().info("players: "+PartyManager.getPlayers().size());
+PartyManager.getParties().forEach(party -> {
+    Logger.getGlobal().info(party.getName());
+    Logger.getGlobal().info("Members: "+party.getPartyPlayers().size());
+    party.getPartyPlayers().forEach(player -> Logger.getGlobal().info(player.getName()+" online: "+player.isOnline()+" parties: "+player.getParties().size()));
+});
+
 
             }
-        }.runTaskTimer(MCMEScripts.getInstance(),MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,95),
-                MCMEScripts.getConfigInt(ConfigKeys.SCRIPT_CHECKER_PERIOD,100));
+        }.runTaskTimer(MCMEScripts.getInstance(), 1,
+                       MCMEScripts.getConfigInt(ConfigKeys.SCRIPT_CHECKER_PERIOD,100));
     }
 
-    public void stopChecker() {
+    public static void stopChecker() {
         if(checker!=null && !checker.isCancelled()) {
             checker.cancel();
         }
@@ -134,7 +165,7 @@ public class QuestManager {
     }
 
     public static Set<Quest> getQuests(Party party) {
-        return quests.get(party);
+        return quests.getOrDefault(party, Collections.emptySet());
     }
 
     public static boolean hasActiveQuest(Party party, String questName) {

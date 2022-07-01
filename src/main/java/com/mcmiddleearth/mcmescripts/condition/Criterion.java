@@ -19,7 +19,7 @@ public class Criterion implements Function<Integer,Boolean> {
             case ">" -> integer > limit;
             case "<=" -> integer <= limit;
             case ">=" -> integer >= limit;
-            case "=" -> integer.equals(limit);
+            case "==", "=" -> integer.equals(limit);
             case "<>", "!=" -> !integer.equals(limit);
             default -> true;
         };

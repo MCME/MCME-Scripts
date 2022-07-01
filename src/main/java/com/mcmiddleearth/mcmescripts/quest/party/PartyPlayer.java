@@ -3,7 +3,9 @@ package com.mcmiddleearth.mcmescripts.quest.party;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
 import com.mcmiddleearth.mcmescripts.MCMEScripts;
+import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
+import lombok.extern.java.Log;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -11,6 +13,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Represents a minecraft player as member of parties.
@@ -53,6 +56,14 @@ public class PartyPlayer {
      */
     private static final String KEY_ACTIVE = "active",
                                 KEY_PARTIES = "parties";
+
+    static {
+        if(!playerFolder.exists()) {
+            if(playerFolder.mkdir()) {
+                Logger.getLogger(MCMEScripts.class.getSimpleName()).info("Player folder created.");
+            }
+        }
+    }
 
     PartyPlayer(UUID uuid, String name) {
         this.uuid = uuid;
@@ -143,6 +154,8 @@ public class PartyPlayer {
 
     public void save() {
         //save player data file
+Logger.getGlobal().info("Save player data file!");
+DebugManager.printStackTrace();
         try(JsonWriter writer = JsonUtils.getGson().newJsonWriter(new FileWriter(dataFile))) {
             writer.beginObject()
                 .name(KEY_ACTIVE).value(activeParty!=null?activeParty.getUniqueId().toString():"null")

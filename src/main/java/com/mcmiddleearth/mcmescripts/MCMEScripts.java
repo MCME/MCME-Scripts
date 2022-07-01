@@ -6,8 +6,9 @@ import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.listener.ChestListener;
 import com.mcmiddleearth.mcmescripts.listener.PlayerListener;
 import com.mcmiddleearth.mcmescripts.listener.WandItemListener;
+import com.mcmiddleearth.mcmescripts.quest.QuestManager;
+import com.mcmiddleearth.mcmescripts.quest.party.PartyListener;
 import com.mcmiddleearth.mcmescripts.script.ScriptManager;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -29,13 +30,15 @@ public final class MCMEScripts extends JavaPlugin {
         scriptManager = new ScriptManager();
         timedTriggerManager = new TimedTriggerManager();
         externalTriggerManager = new ExternalTriggerManager();
+        Bukkit.getPluginManager().registerEvents(new PartyListener(),this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(),this);
         Bukkit.getPluginManager().registerEvents(new WandItemListener(),this);
         Bukkit.getPluginManager().registerEvents(new ChestListener(),this);
-        enableScripts();
         //BukkitAudiences.create(this);
         setExecutor("scripts", new ScriptsCommandHandler("scripts"));
         setExecutor("party", new PartyCommandHandler("party"));
+        Bukkit.getScheduler().runTaskLater(this, this::enableScripts,
+                                            MCMEScripts.getConfigInt(ConfigKeys.START_UP_DELAY,95));
     }
 
     @Override
@@ -48,9 +51,13 @@ public final class MCMEScripts extends JavaPlugin {
         scriptManager.readScripts();
         scriptManager.startChecker();
         timedTriggerManager.startChecker();
+        QuestManager.readQuests();
+        QuestManager.startChecker();
     }
 
     public void disableScripts() {
+        QuestManager.stopChecker();
+        QuestManager.removeQuests();
         timedTriggerManager.stopChecker();
         scriptManager.stopChecker();
         scriptManager.removeScripts();
