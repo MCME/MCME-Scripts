@@ -154,8 +154,8 @@ public class PartyPlayer {
 
     public void save() {
         //save player data file
-Logger.getGlobal().info("Save player data file!");
-DebugManager.printStackTrace();
+//Logger.getGlobal().info("Save player data file!");
+//DebugManager.printStackTrace();
         try(JsonWriter writer = JsonUtils.getGson().newJsonWriter(new FileWriter(dataFile))) {
             writer.beginObject()
                 .name(KEY_ACTIVE).value(activeParty!=null?activeParty.getUniqueId().toString():"null")

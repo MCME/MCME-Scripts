@@ -8,6 +8,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 /**
  * The party manager handles all operations on parties and their members.
@@ -69,6 +70,7 @@ public class PartyManager {
                 } else {
                     //party not yet loaded
                     party = loadParty(partyId);
+//Logger.getGlobal().info("Load party: "+partyId+" "+party);
                     //Check if party has not been disbanded while the player has been offline
                     if (party != null) {
                         parties.add(party);
@@ -78,6 +80,7 @@ public class PartyManager {
                 }
             });
             if(player.getParties().isEmpty()) {
+//Logger.getGlobal().info("Could not load any parties. Creating solo party!");
                 createSoloParty(player);
             } else {
                 //read active party from player data file.
@@ -168,6 +171,7 @@ public class PartyManager {
                 party.addPlayer(player);
             });
             QuestManager.loadQuests(party, partyData);
+            return party;
         }
         return null;
     }

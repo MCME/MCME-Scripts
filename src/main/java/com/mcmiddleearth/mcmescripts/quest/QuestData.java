@@ -2,10 +2,14 @@ package com.mcmiddleearth.mcmescripts.quest;
 
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
-import com.mcmiddleearth.mcmescripts.quest.tags.*;
+import com.mcmiddleearth.mcmescripts.quest.tags.AbstractTag;
+import com.mcmiddleearth.mcmescripts.quest.tags.StringTag;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represents progress of a party in a quest.
@@ -110,6 +114,10 @@ public class QuestData {
 
     public void removeStage(String name) {
         stages.remove(name);
+    }
+
+    public List<String> getEnabledStages() {
+        return stages;
     }
 
     public boolean isStageEnabled(String name) {

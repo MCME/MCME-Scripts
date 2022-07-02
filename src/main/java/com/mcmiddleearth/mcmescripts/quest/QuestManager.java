@@ -129,6 +129,7 @@ Logger.getGlobal().info("create quest loader: "+file.getName());
                 });
 
                 //Loading and unloading of stages
+//Logger.getGlobal().info("Questing parties: "+quests.size());
                 quests.forEach((party,quests) -> {
                     //todo: check if party is active
                     quests.forEach(Quest::checkStages);
@@ -140,13 +141,13 @@ Logger.getGlobal().info("create quest loader: "+file.getName());
                     lastQuestLifetimeCheck = System.currentTimeMillis();
                 }
 
-Logger.getGlobal().info("parties: "+PartyManager.getParties().size());
+/*Logger.getGlobal().info("parties: "+PartyManager.getParties().size());
 Logger.getGlobal().info("players: "+PartyManager.getPlayers().size());
 PartyManager.getParties().forEach(party -> {
     Logger.getGlobal().info(party.getName());
     Logger.getGlobal().info("Members: "+party.getPartyPlayers().size());
     party.getPartyPlayers().forEach(player -> Logger.getGlobal().info(player.getName()+" online: "+player.isOnline()+" parties: "+player.getParties().size()));
-});
+});*/
 
 
             }

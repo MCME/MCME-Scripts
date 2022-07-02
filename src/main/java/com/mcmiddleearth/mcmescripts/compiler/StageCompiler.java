@@ -7,6 +7,7 @@ import com.mcmiddleearth.mcmescripts.quest.StageAccess;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class StageCompiler {
 
@@ -15,8 +16,10 @@ public class StageCompiler {
 
     public static JsonObject getStageData(String name, JsonObject questData) {
         JsonObject stages = questData.get(KEY_STAGES).getAsJsonObject();
+Logger.getGlobal().info("Compiling stage: "+name);
+questData.entrySet().forEach(entry -> Logger.getGlobal().info("Name: "+entry.getKey()+" Value"+entry.getValue()));
         JsonElement stageData = stages.get(name);
-        if(stageData.isJsonObject()) {
+        if(stageData!=null && stageData.isJsonObject()) {
             return stageData.getAsJsonObject();
         } else {
             return null;

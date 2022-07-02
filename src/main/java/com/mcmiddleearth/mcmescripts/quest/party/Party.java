@@ -191,8 +191,8 @@ public class Party {
 
     public void save() {
         //save party data file including quest data
-Logger.getGlobal().info("Save party data file!");
-DebugManager.printStackTrace();
+//Logger.getGlobal().info("Save party data file!");
+//DebugManager.printStackTrace();
         try(JsonWriter writer = JsonUtils.getGson().newJsonWriter(new FileWriter(dataFile))) {
             writer.beginObject()
                 .name(KEY_NAME).value(name)

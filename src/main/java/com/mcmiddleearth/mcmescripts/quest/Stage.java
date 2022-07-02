@@ -7,6 +7,7 @@ import com.mcmiddleearth.mcmescripts.utils.JsonUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * Stages are scripts that can be disabled.
@@ -46,6 +47,12 @@ public class Stage extends Script {
 
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
+    }
+
+    @Override
+    public void load() {
+        Logger.getGlobal().info("Loading stage: "+name);
+        super.load();
     }
 
     @Override

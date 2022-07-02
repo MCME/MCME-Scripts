@@ -33,8 +33,7 @@ public class Quest {
     private final QuestData data;
 
     /**
-     * Map of all loaded stages. mapping stage.name -> stage
-     * IMPORTANT: This map contains only loaded stages but not all enabled states.
+     * Map of all enabled stages. mapping stage.name -> stage
      */
     private final Map<String,Stage> stages = new HashMap<>();
 
@@ -51,16 +50,30 @@ public class Quest {
         this.data = data;
         data.setLastPlayTime(System.currentTimeMillis());
         save();
+        data.getEnabledStages().forEach(stageName -> {
+            Stage stage = readStage(stageName);
+            if(stage!=null) {
+                stages.put(stageName, stage);
+            }
+        });
+    }
+
+    private Stage readStage(String stageName) {
+        try {
+            return new Stage(this,stageName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void enableStage(String name) {
         if(!stages.containsKey(name)) {
-            try {
-                stages.put(name, new Stage(this,name));
+            Stage stage = readStage(name);
+            if(stage!=null) {
                 data.addStage(name);
                 save();
-            } catch (IOException e) {
-                e.printStackTrace();
+                stages.put(name, stage);
             }
         }
     }
@@ -68,7 +81,8 @@ public class Quest {
     public void disableStage(String name) {
         if(stages.containsKey(name)) {
             Stage stage = stages.get(name);
-            stage.unload();
+            if(stage.isActive())
+                stage.unload();
             stages.remove(name);
             data.removeStage(name);
             save();
@@ -82,8 +96,14 @@ public class Quest {
 
     public void checkStages() {
         //check if stages needs loading or unloading
-        stages.values().stream().filter(stage -> stage.isTriggered() && !stage.isActive()).forEach(Stage::load);
-        stages.values().stream().filter(stage -> !stage.isTriggered() && stage.isActive()).forEach(Stage::unload);
+//Logger.getGlobal().info("Check stages of: "+name + " number of stages: "+stages.size());
+        stages.values().forEach(stage -> {
+            if(stage.isTriggered() && !stage.isActive()) {
+                stage.load();
+            } else if(!stage.isTriggered() && stage.isActive()) {
+                stage.unload();
+            }
+        });
         //todo: check for entities and triggers which are used in more than one stage
     }
 
