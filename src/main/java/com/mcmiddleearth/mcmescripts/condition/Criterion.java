@@ -14,15 +14,17 @@ public class Criterion implements Function<Integer,Boolean> {
 
     @Override
     public Boolean apply(Integer integer) {
-        return switch (comparator) {
-            case "<" -> integer < limit;
-            case ">" -> integer > limit;
-            case "<=" -> integer <= limit;
-            case ">=" -> integer >= limit;
-            case "==", "=" -> integer.equals(limit);
-            case "<>", "!=" -> !integer.equals(limit);
-            default -> true;
-        };
+        switch (comparator) {
+            case "<": return integer < limit;
+            case ">": return integer > limit;
+            case "<=": return integer <= limit;
+            case ">=": return integer >= limit;
+            case "==":
+            case "=": return integer.equals(limit);
+            case "<>":
+            case "!=": return !integer.equals(limit);
+            default: return true;
+        }
     }
 
     public String getComparator() {

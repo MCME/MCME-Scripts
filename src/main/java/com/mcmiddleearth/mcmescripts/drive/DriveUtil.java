@@ -327,12 +327,12 @@ public class DriveUtil {
     }
 
     private static String getParentId(String parent) {
-        return switch (parent) {
-            case "animations" -> MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_ANIMATIONS, "");
-            case "entities" -> MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_ENTITIES, "");
-            case "scripts" -> MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_SCRIPTS, "");
-            default -> null;
-        };
+        switch (parent) {
+            case "animations": return MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_ANIMATIONS, "");
+            case "entities": return MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_ENTITIES, "");
+            case "scripts": return MCMEScripts.getConfigString(ConfigKeys.DRIVE_FOLDER_SCRIPTS, "");
+            default: return null;
+        }
     }
 
     private static java.io.File getLocalFile(String parent, String filename) {

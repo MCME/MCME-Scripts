@@ -15,6 +15,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -75,7 +76,8 @@ public class ItemFilter {
 
         if (damage != null) {
             if (damage.getKey() == ItemPropertyState.PRESENT) {
-                if(itemMeta instanceof Damageable itemDamageMeta) {
+                if(itemMeta instanceof Damageable) {
+                    Damageable  itemDamageMeta = (Damageable) itemMeta;
                     if (damage.getValue() != itemDamageMeta.getDamage()) {
                         return false;
                     }
@@ -85,7 +87,8 @@ public class ItemFilter {
                 }
             }
             else if (damage.getKey() == ItemPropertyState.NOT_PRESENT) {
-                if(itemMeta instanceof Damageable itemDamageMeta) {
+                if(itemMeta instanceof Damageable) {
+                    Damageable  itemDamageMeta = (Damageable) itemMeta;
                     if (damage.getValue() == itemDamageMeta.getDamage()) {
                         return false;
                     }
@@ -119,7 +122,11 @@ public class ItemFilter {
                 if (lore == null) {
                     return false;
                 }
-                List<String> actualLore = lore.stream().map(Examinable::examinableName).toList();
+                List<String> actualLore = new ArrayList<>();
+                for (Component component : lore) {
+                    String examinableName = component.examinableName();
+                    actualLore.add(examinableName);
+                }
                 if (!this.lore.getValue().equals(actualLore)) {
                     return false;
                 }

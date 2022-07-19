@@ -23,11 +23,15 @@ public class ScriptFilter {
     }
 
     public boolean filter(String scriptName) {
-        return switch (type) {
-            case NO -> false;
-            case ALL -> true;
-            case ONE -> selectedScript.equalsIgnoreCase(scriptName);
+        switch (type) {
+            case NO:
+                return false;
+            case ALL:
+                return true;
+            case ONE:
+                return selectedScript.equalsIgnoreCase(scriptName);
         };
+        return false;
     }
 
     public enum Type {

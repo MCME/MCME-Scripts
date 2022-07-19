@@ -19,21 +19,21 @@ public enum Level {
 
     public static Level next(Level previous) {
         if(previous == null) previous = Level.CRITICAL;
-        return switch (previous) {
-            case VERBOSE -> Level.INFO;
-            case INFO -> Level.WARNING;
-            case WARNING -> Level.SEVERE;
-            case SEVERE -> Level.CRITICAL;
-            default -> Level.VERBOSE;
-        };
+        switch (previous) {
+            case VERBOSE: return Level.INFO;
+            case INFO: return Level.WARNING;
+            case WARNING: return Level.SEVERE;
+            case SEVERE: return Level.CRITICAL;
+            default: return Level.VERBOSE;
+        }
     }
 
     public java.util.logging.Level getLoggerLevel() {
-        return switch (level) {
-            case 0 -> java.util.logging.Level.ALL;
-            case 1 -> java.util.logging.Level.INFO;
-            case 2 -> java.util.logging.Level.WARNING;
-            default -> java.util.logging.Level.SEVERE;
-        };
+        switch (level) {
+            case 0: return java.util.logging.Level.ALL;
+            case 1: return java.util.logging.Level.INFO;
+            case 2: return java.util.logging.Level.WARNING;
+            default: return java.util.logging.Level.SEVERE;
+        }
     }
 }
