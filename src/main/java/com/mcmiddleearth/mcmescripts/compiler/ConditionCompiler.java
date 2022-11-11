@@ -17,6 +17,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import javax.swing.text.html.Option;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class ConditionCompiler {
                                 KEY_START               = "start",
                                 KEY_END                 = "end",
                                 KEY_WORLD               = "world",
+                                KEY_MESSAGE             = "message",
 
                                 VALUE_TALK                  = "talk",
                                 VALUE_NO_TALK               = "no_talk",
@@ -48,7 +50,8 @@ public class ConditionCompiler {
                                 VALUE_PROXIMITY_ENTITY      = "entity_proximity",
                                 VALUE_ANIMATION             = "animation",
                                 VALUE_PLAYER_ONLINE         = "player_online",
-                                VALUE_SERVER_DAYTIME        = "server_daytime";
+                                VALUE_SERVER_DAYTIME        = "server_daytime",
+                                VALUE_MESSAGE               = "message";
 
     public static Set<Condition> compile(JsonObject jsonData) {
         JsonElement conditions = jsonData.get(KEY_CONDITION);
@@ -157,6 +160,10 @@ public class ConditionCompiler {
                 case VALUE_PLAYER_ONLINE:
                     PlayerSelector playerSelector = SelectorCompiler.compilePlayerSelector(jsonObject);
                     return Optional.of(new OnlinePlayerCondition(playerSelector, compileFunction(jsonObject)));
+                case VALUE_MESSAGE:
+                    boolean negate = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_EXCLUDE), false);
+                    String message = PrimitiveCompiler.compileString(jsonObject.get(KEY_MESSAGE), "*");
+                    return Optional.of(new MessageCondition(message, negate));
             }
         } catch(NullPointerException ignore) {}
         return Optional.empty();

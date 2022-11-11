@@ -11,8 +11,8 @@ import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
 
 public class VirtualEntityTalkTrigger extends EntitiesEventTrigger {
 
-    public VirtualEntityTalkTrigger(Action action) {
-        super(action);
+    public VirtualEntityTalkTrigger(Action action, boolean useAllEntities) {
+        super(action, useAllEntities);
         //DebugManager.info(Modules.Trigger.create(this.getClass()),
         //        "Action: " + (action!=null?action.getClass().getSimpleName():null));
     }
@@ -20,11 +20,13 @@ public class VirtualEntityTalkTrigger extends EntitiesEventTrigger {
     @SuppressWarnings("unused")
     @EntityEventHandler
     public void onEntityTalk(VirtualEntityTalkEvent event) {
-        TriggerContext context = new TriggerContext(this)
-                .withEntity(event.getVirtualEntity())
-                .withMessage(Joiner.on("\n").join(event.getLayout().getLines()));
-        call(context);
-        //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
-        //        "Entity: "+context.getEntity());
+        if(isScriptEntity(event.getVirtualEntity())) {
+            TriggerContext context = new TriggerContext(this)
+                    .withEntity(event.getVirtualEntity())
+                    .withMessage(Joiner.on("\n").join(event.getLayout().getLines()));
+            call(context);
+            //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
+            //        "Entity: "+context.getEntity());
+        }
     }
 }

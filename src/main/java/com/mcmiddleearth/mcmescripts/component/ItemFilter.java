@@ -1,10 +1,8 @@
 package com.mcmiddleearth.mcmescripts.component;
 
 import com.google.common.base.Joiner;
-import com.mcmiddleearth.entities.inventory.McmeInventory;
 import com.mcmiddleearth.mcmescripts.debug.Descriptor;
 import net.kyori.adventure.text.Component;
-import net.kyori.examination.Examinable;
 import org.bukkit.Material;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.EntityEquipment;
@@ -18,7 +16,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ItemFilter {
 

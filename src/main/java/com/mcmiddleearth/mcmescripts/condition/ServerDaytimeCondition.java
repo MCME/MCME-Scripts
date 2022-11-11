@@ -9,9 +9,9 @@ public class ServerDaytimeCondition extends Condition{
 
     private final long startTick, endTick;
 
-    World world;
+    private World world;
 
-    boolean negate;
+    private boolean negate;
 
     public ServerDaytimeCondition(World world, long startTick, long endTick, boolean negate) {
         this.startTick = startTick;

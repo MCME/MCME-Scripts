@@ -11,8 +11,8 @@ import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
 public class
 VirtualEntityStopTalkTrigger extends EntitiesEventTrigger {
 
-    public VirtualEntityStopTalkTrigger(Action action) {
-        super(action);
+    public VirtualEntityStopTalkTrigger(Action action, boolean useAllEntities) {
+        super(action, useAllEntities);
         //DebugManager.info(Modules.Trigger.create(this.getClass()),
         //         "Action: " + (action!=null?action.getClass().getSimpleName():null));
     }
@@ -20,10 +20,12 @@ VirtualEntityStopTalkTrigger extends EntitiesEventTrigger {
     @SuppressWarnings("unused")
     @EntityEventHandler
     public void onEntityStopTalk(VirtualEntityStopTalkEvent event) {
-        TriggerContext context = new TriggerContext(this)
-                                         .withEntity(event.getVirtualEntity());
-        call(context);
-        //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
-        //        "Entity: "+context.getEntity());
+        if(isScriptEntity(event.getVirtualEntity())) {
+            TriggerContext context = new TriggerContext(this)
+                    .withEntity(event.getVirtualEntity());
+            call(context);
+            //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
+            //        "Entity: "+context.getEntity());
+        }
     }
 }

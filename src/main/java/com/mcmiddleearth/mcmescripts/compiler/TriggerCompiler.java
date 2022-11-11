@@ -50,6 +50,7 @@ public class TriggerCompiler {
                                 KEY_CURRENT_ANIMATION   = "current_animation",
                                 KEY_NEXT_ANIMATION      = "next_animation",
                                 KEY_PROCESS             = "process",
+                                KEY_USE_ALL_ENTITIES    = "use_all_entities",
 
                                 VALUE_REAL_TIMED_TRIGGER            = "real_timed",
                                 VALUE_REAL_PERIODIC_TRIGGER         = "real_periodic",
@@ -145,16 +146,20 @@ public class TriggerCompiler {
                 trigger = new PlayerQuitTrigger(null);
                 break;
             case VALUE_PLAYER_VIRTUAL_ATTACK_TRIGGER:
-                trigger = new VirtualPlayerAttackTrigger(null);
+                boolean useAllEntities = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_USE_ALL_ENTITIES),false);
+                trigger = new VirtualPlayerAttackTrigger(null, useAllEntities);
                 break;
             case VALUE_GOAL_FINISHED_TRIGGER:
-                trigger = new GoalFinishedTrigger(null);
+                useAllEntities = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_USE_ALL_ENTITIES),false);
+                trigger = new GoalFinishedTrigger(null, useAllEntities);
                 break;
             case VALUE_VIRTUAL_TALK_TRIGGER:
-                trigger = new VirtualEntityTalkTrigger(null);
+                useAllEntities = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_USE_ALL_ENTITIES),false);
+                trigger = new VirtualEntityTalkTrigger(null, useAllEntities);
                 break;
             case VALUE_VIRTUAL_STOP_TALK_TRIGGER:
-                trigger = new VirtualEntityStopTalkTrigger(null);
+                useAllEntities = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_USE_ALL_ENTITIES),false);
+                trigger = new VirtualEntityStopTalkTrigger(null, useAllEntities);
                 break;
             case VALUE_ANIMATION_CHANGE_TRIGGER:
                 JsonElement currentJson = jsonObject.get(KEY_CURRENT_ANIMATION);
@@ -167,7 +172,8 @@ public class TriggerCompiler {
                 if (nextJson instanceof JsonPrimitive) {
                     next = nextJson.getAsString();
                 }
-                trigger = new AnimationChangeTrigger(null, current, next);
+                useAllEntities = PrimitiveCompiler.compileBoolean(jsonObject.get(KEY_USE_ALL_ENTITIES),false);
+                trigger = new AnimationChangeTrigger(null, current, next, useAllEntities);
                 break;
             case VALUE_SELECTION_TRIGGER:
                 JsonElement timeJson = jsonObject.get(KEY_PERIOD);

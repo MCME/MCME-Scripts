@@ -10,8 +10,8 @@ import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
 
 public class VirtualPlayerAttackTrigger extends EntitiesEventTrigger {
 
-    public VirtualPlayerAttackTrigger(Action action) {
-        super(action);
+    public VirtualPlayerAttackTrigger(Action action, boolean useAllEntities) {
+        super(action, useAllEntities);
         //DebugManager.info(Modules.Trigger.create(this.getClass()),
         //        "Action: " + (action!=null?action.getClass().getSimpleName():null));
     }
@@ -19,12 +19,14 @@ public class VirtualPlayerAttackTrigger extends EntitiesEventTrigger {
     @SuppressWarnings("unused")
     @EntityEventHandler
     public void playerJoin(VirtualPlayerAttackEvent event) {
-        TriggerContext context = new TriggerContext(this)
-                .withPlayer(event.getPlayer().getBukkitPlayer())
-                .withEntity(event.getVirtualEntity());
-        call(context);
-        //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
-        //        "Player: " + event.getPlayer().getName() + " Entity: " + context.getEntity().getName());
+        if(isScriptEntity(event.getVirtualEntity())) {
+            TriggerContext context = new TriggerContext(this)
+                    .withPlayer(event.getPlayer().getBukkitPlayer())
+                    .withEntity(event.getVirtualEntity());
+            call(context);
+            //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
+            //        "Player: " + event.getPlayer().getName() + " Entity: " + context.getEntity().getName());
+        }
     }
 
 }

@@ -16,8 +16,8 @@ public class AnimationChangeTrigger extends EntitiesEventTrigger {
 
     private final String current, next;
 
-    public AnimationChangeTrigger(Action action, String current, String next) {
-        super(action);
+    public AnimationChangeTrigger(Action action, String current, String next, boolean useAllEntities) {
+        super(action, useAllEntities);
         this.current = current;
         this.next = next;
         //DebugManager.info(Modules.Trigger.create(this.getClass()),
@@ -27,21 +27,23 @@ public class AnimationChangeTrigger extends EntitiesEventTrigger {
     @SuppressWarnings("unused")
     @EntityEventHandler
     public void onAnimationChange(BakedAnimationEntityAnimationChangeEvent event) {
-        TriggerContext context = new TriggerContext(this);
-        context.getDescriptor().addLine("Context current: "+event.getCurrentAnimation())
-                .addLine("Context next: "+event.getNextAnimation());
-        if((current == null || current.equalsIgnoreCase(event.getCurrentAnimation()))
-                && (next == null || next.equalsIgnoreCase(event.getNextAnimation()))) {
-            context.getDescriptor().addLine("Animations match!");
-            context.withEntity(event.getEntity());
-            context.withEntityEvent(event);
-            call(context);
-            //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
-            //        "Entity: " + context.getEntity() + " Current: " + event.getCurrentAnimation()
-            //                + " Next: " + event.getNextAnimation());
-        } else {
-            context.getDescriptor().addLine("No Animations match. Event cancelled!");
-            DebugManager.info(Modules.Trigger.call(this.getClass()),context.getDescriptor().print(""));
+        if(isScriptEntity(event.getVirtualEntity())) {
+            TriggerContext context = new TriggerContext(this);
+            context.getDescriptor().addLine("Context current: " + event.getCurrentAnimation())
+                    .addLine("Context next: " + event.getNextAnimation());
+            if ((current == null || current.equalsIgnoreCase(event.getCurrentAnimation()))
+                    && (next == null || next.equalsIgnoreCase(event.getNextAnimation()))) {
+                context.getDescriptor().addLine("Animations match!");
+                context.withEntity(event.getEntity());
+                context.withEntityEvent(event);
+                call(context);
+                //DebugManager.verbose(Modules.Trigger.call(this.getClass()),
+                //        "Entity: " + context.getEntity() + " Current: " + event.getCurrentAnimation()
+                //                + " Next: " + event.getNextAnimation());
+            } else {
+                context.getDescriptor().addLine("No Animations match. Event cancelled!");
+                DebugManager.info(Modules.Trigger.call(this.getClass()), context.getDescriptor().print(""));
+            }
         }
     }
 
