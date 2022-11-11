@@ -16,7 +16,7 @@ public class LocationCompiler {
             //DebugManager.info(Modules.Location.create(LocationCompiler.class),"Can't compile location. Missing json element.");
             return Optional.empty();
         }
-        String[] split = element.getAsString().replace(" ","").split(",");
+        String[] split = element.getAsString().split(",");
         if(split.length<4) {
             DebugManager.warn(Modules.Location.create(LocationCompiler.class),"Can't compile location. To few coordinates.");
             return Optional.empty();
@@ -27,9 +27,9 @@ public class LocationCompiler {
             return Optional.empty();
         }
         try {
-            double x = Double.parseDouble(split[1]);
-            double y = Double.parseDouble(split[2]);
-            double z = Double.parseDouble(split[3]);
+            double x = Double.parseDouble(split[1].trim());
+            double y = Double.parseDouble(split[2].trim());
+            double z = Double.parseDouble(split[3].trim());
             return Optional.of(new Location(world, x, y, z));
         } catch(NumberFormatException ex) {
             DebugManager.warn(Modules.Location.create(LocationCompiler.class),"Can't compile location. NumberFormatException.");
