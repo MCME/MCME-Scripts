@@ -3,7 +3,6 @@ package com.mcmiddleearth.mcmescripts.selector;
 import com.mcmiddleearth.entities.entities.VirtualEntity;
 import com.mcmiddleearth.mcmescripts.debug.DebugManager;
 import com.mcmiddleearth.mcmescripts.debug.Modules;
-import com.mcmiddleearth.mcmescripts.trigger.TriggerContext;
 
 import java.util.List;
 
@@ -16,7 +15,7 @@ public class VirtualEntitySelector extends EntitySelector<VirtualEntity> {
     }
 
     @Override
-    public List<VirtualEntity> select(TriggerContext context) {
-        return selectVirtualEntities(context);
+    public List<VirtualEntity> provideTargets(EntitySelectorContext<VirtualEntity> selectorContext) {
+        return provideVirtualEntityTargets(selectorContext);
     }
 }

@@ -4,8 +4,8 @@ import com.mcmiddleearth.entities.ai.goal.Goal;
 import com.mcmiddleearth.entities.entities.McmeEntity;
 import com.mcmiddleearth.entities.events.events.McmeEntityEvent;
 import com.mcmiddleearth.mcmescripts.debug.Descriptor;
-import com.mcmiddleearth.mcmescripts.quest.party.Party;
 import com.mcmiddleearth.mcmescripts.quest.Stage;
+import com.mcmiddleearth.mcmescripts.quest.party.Party;
 import com.mcmiddleearth.mcmescripts.script.Script;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -38,7 +38,7 @@ public class TriggerContext {
             party = ((Stage) trigger.getScript()).getQuest().getParty();
         }
         this.location = trigger.getLocation();
-        this.player = (trigger.getPlayer()!=null?trigger.getPlayer().selectPlayer(this).stream().findFirst().orElse(null):null);
+        this.player = (trigger.getPlayer()!=null?trigger.getPlayer().select(this).stream().findFirst().orElse(null):null);
         this.entity = (trigger.getEntity()!=null?trigger.getEntity().select(this).stream().findFirst().orElse(null):null);
         descriptor = new Descriptor("Event Log:").indent()
                 .addLine(trigger.getClass().getSimpleName()+": "+trigger.getScript().getName()+"."+trigger.getName())

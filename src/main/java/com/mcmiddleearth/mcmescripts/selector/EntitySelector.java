@@ -4,6 +4,8 @@ import com.mcmiddleearth.entities.EntitiesPlugin;
 import com.mcmiddleearth.entities.ai.goal.Goal;
 import com.mcmiddleearth.entities.ai.goal.GoalType;
 import com.mcmiddleearth.entities.api.McmeEntityType;
+import com.mcmiddleearth.entities.entities.McmeEntity;
+import com.mcmiddleearth.entities.entities.RealPlayer;
 import com.mcmiddleearth.entities.entities.VirtualEntity;
 import com.mcmiddleearth.entities.entities.composite.SpeechBalloonEntity;
 import com.mcmiddleearth.mcmescripts.debug.DebugManager;
@@ -13,12 +15,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public abstract class EntitySelector<T> implements Selector<T> {
+public abstract class EntitySelector<T extends Entity> implements Selector<T> {
 
     private final String selector;
 
@@ -27,19 +37,8 @@ public abstract class EntitySelector<T> implements Selector<T> {
     protected double x,y,z;
     protected boolean xRelative = true, yRelative = true, zRelative = true;
     protected double dx = -1, dy = -1, dz = -1;
-    protected double minDistanceSquared = -1, maxDistanceSquared = Double.MAX_VALUE;
-    protected McmeEntityType entityType;
-    protected boolean excludeType;
-    protected String name;
-    protected boolean excludeName;
-    protected GameMode gameMode;
-    protected boolean excludeGameMode;
-    protected float minPitch = -90, maxPitch = 90;
-    protected float minYaw = -180, maxYaw = 180;
-    protected GoalType goalType;
-    protected boolean excludeGoalType;
-    protected String talking;
-    protected Set<String> tags = new HashSet<>();
+
+    protected List<SelectorCondition<T>> conditions = new ArrayList<>();
 
     public EntitySelector(String selector) throws IndexOutOfBoundsException {
         this.selector = selector;
@@ -113,296 +112,219 @@ public abstract class EntitySelector<T> implements Selector<T> {
                         dz = Double.parseDouble(split[1]);
                         break;
                     case "distance":
-                        String[] minMax = split[1].split("\\.\\.");
-                        double minDistance = Double.parseDouble(minMax[0]);
-                        minDistanceSquared = minDistance * minDistance;
-                        if(minMax.length > 1) {
-                            double maxDistance = Double.parseDouble(minMax[1]);
-                            maxDistanceSquared = maxDistance * maxDistance;
-                        } else {
-                            maxDistanceSquared = minDistanceSquared;
-                        }
+                        conditions.add(new DistanceSelectorCondition<>(split[1]));
                         break;
                     case "type":
-                        if(split[1].startsWith("!")) {
-                            entityType = McmeEntityType.valueOf(split[1].substring(1));
-                            excludeType = true;
-                        } else {
-                            entityType = McmeEntityType.valueOf(split[1]);
-                        }
+                        conditions.add(NegatingSelectorCondition.parse(
+                                split[1],
+                                rest -> new McmeEntityTypeSelectorCondition<>(McmeEntityType.valueOf(rest.toUpperCase()))
+                        ));
                         break;
                     case "name":
-                        if(split[1].startsWith("!")) {
-                            name = split[1].substring(1);
-                            excludeName = true;
-                        } else {
-                            name = split[1];
-                        }
+                        conditions.add(NegatingSelectorCondition.parse(split[1], NameSelectorCondition::new));
                         break;
                     case "gamemode":
-                        if(split[1].startsWith("1")) {
-                            gameMode = GameMode.valueOf(split[1].substring(1).toUpperCase());
-                            excludeGameMode = true;
-                        } else {
-                            gameMode = GameMode.valueOf(split[1].toUpperCase());
-                        }
+                        conditions.add(NegatingSelectorCondition.parse(
+                                split[1],
+                                rest -> new GameModeSelectorCondition<>(GameMode.valueOf(rest.toUpperCase()))
+                        ));
                         break;
                     case "x_rotation":
-                        minMax = split[1].split("\\.\\.");
-                        minPitch = Float.parseFloat(minMax[0]);
-                        if(minMax.length > 1) {
-                            maxPitch = Float.parseFloat(minMax[1]);
-                        } else {
-                            maxPitch = minPitch;
-                        }
+                        conditions.add(new PitchSelectorCondition<>(split[1]));
                         break;
                     case "y_rotation":
-                        minMax = split[1].split("\\.\\.");
-                        minYaw = Float.parseFloat(minMax[0]);
-                        if(minMax.length > 1) {
-                            maxYaw = Float.parseFloat(minMax[1]);
-                        } else {
-                            maxYaw = minYaw;
-                        }
+                        conditions.add(new YawSelectorCondition<>(split[1]));
                         break;
                     case "goal_type":
-                        if(split[1].startsWith("!")) {
-                            goalType = GoalType.valueOf(split[1].substring(1).toUpperCase());
-                            excludeGoalType = true;
-                        } else {
-                            goalType = GoalType.valueOf(split[1].toUpperCase());
-                        }
+                        conditions.add(NegatingSelectorCondition.parse(
+                                split[1],
+                                rest -> new GoalTypeSelectorCondition<>(GoalType.valueOf(rest.toUpperCase()))
+                        ));
                         break;
                     case "talking":
-                        talking = split[1];
+                        conditions.add(new TalkingSelectorCondition<>(split[1].equals("true")));
                         break;
                     case "tag":
-                        tags.add(split[1]);
+                        conditions.add(NegatingSelectorCondition.parse(
+                                split[1],
+                                TagSelectorCondition::new
+                        ));
                         break;
                 }
+            }
+
+            if (hasAreaLimit()) {
+                conditions.add(new AreaSelectorCondition<>());
             }
         }
     }
 
-    public List<Player> selectPlayer(TriggerContext context) {
-        Location loc = context.getLocation();
-        List<Player> players = new ArrayList<>();
-        switch(selectorType) {
+    @Override
+    public List<T> select(TriggerContext context) {
+        EntitySelectorContext<T> selectorContext = new EntitySelectorContext<>(this, context);
+
+        List<T> targets = provideTargets(selectorContext);
+        List<T> results = new ArrayList<>(targets.size());
+
+        // Filter targets
+        for (T entity : targets) {
+            if (testEntity(selectorContext, entity)) {
+                results.add(entity);
+            }
+        }
+
+        // Bail early if no results were found
+        if (results.isEmpty()) return results;
+
+        // Sort targets if requested
+        // TODO: sort
+        // TODO: original code sorted entities by distance before returning the results if mix or max distance was given. is this significant?
+        if (false) { // if (sort != null) {
+            Location center = selectorContext.getCenter();
+            if (center == null) throw new IllegalStateException("Selector " + getSelector() + " received no location");
+
+            results = results.stream()
+                    .map(entity -> {
+                        EntitySelectorElement<T> element = new EntitySelectorElement<>(entity);
+                        element.setValue(entity.getLocation().distanceSquared(center));
+                        return element;
+                    })
+                    .sorted() // TODO
+                    .map(EntitySelectorElement::getEntity)
+                    .collect(Collectors.toList());
+        }
+
+        // Pick a single entity if the selector type demands it
+        switch (selectorType) {
+            case NEAREST_PLAYER: {
+                Location center = selectorContext.getCenter();
+                if (center == null) throw new IllegalStateException("Selector " + getSelector() + " received no location");
+
+                T entity = null;
+                double maxDistance = Double.MAX_VALUE;
+                for (T result : results) {
+                    double distance = result.getLocation().distanceSquared(center);
+                    if (maxDistance > distance) {
+                        maxDistance = distance;
+                        entity = result;
+                    }
+                }
+
+                results = Collections.singletonList(entity);
+            } break;
+            case RANDOM_PLAYER:
+                results = Collections.singletonList(results.get(new Random().nextInt(results.size())));
+                break;
+            default:
+                break;
+        }
+
+        // Return results
+        return results.size() > limit ? results.subList(0, limit) : results;
+    }
+
+    /**
+     * Returns a list of all targets this selector can select from.
+     */
+    public abstract List<T> provideTargets(EntitySelectorContext<T> selectorContext);
+
+    public List<Player> providePlayerTargets(EntitySelectorContext<T> selectorContext) {
+        List<Player> targets = new ArrayList<>();
+        TriggerContext context = selectorContext.getTriggerContext();
+
+        switch (selectorType) {
             case TRIGGER_ENTITY:
                 if (context.getPlayer() != null)
-                    players.add(context.getPlayer());
-                //DebugManager.verbose(Modules.Selector.select(this.getClass()),
-                //        "Selector: " + getSelector() + " Selected: " + (context.getPlayer() != null ? context.getPlayer().getName() : null));
-                break;//return players;
+                    targets.add(context.getPlayer());
             case NEAREST_PLAYER:
             case ALL_PLAYERS:
             case ALL_ENTITIES:
             case RANDOM_PLAYER:
                 //if party is set in context, select players from that party only
                 if (context.isQuestContext()) {
-                    players.addAll(context.getParty().getOnlinePlayers());
+                    targets.addAll(context.getParty().getOnlinePlayers());
                 } else {
-                    players.addAll(Bukkit.getOnlinePlayers());
+                    targets.addAll(Bukkit.getOnlinePlayers());
                 }
-                break;
             default:
-                DebugManager.warn(Modules.Selector.select(this.getClass()),
-                        "Selector: "+getSelector()
-                                +" Invalid player selector type!");
-                return Collections.emptyList();
-       }
-
-        //filtering
-        if (loc != null) {
-            loc = new Location(loc.getWorld(), getAbsolute(loc.getX(), xRelative, x),
-                    getAbsolute(loc.getY(), yRelative, y),
-                    getAbsolute(loc.getZ(), zRelative, z));
-        }
-        if (hasAreaLimit() && loc != null) {
-            World world = loc.getWorld();
-            double xMin = (dx < 0 ? Integer.MIN_VALUE : loc.getX() - dx);
-            double xMax = (dx < 0 ? Integer.MAX_VALUE : loc.getX() + dx);
-            double yMin = (dy < 0 ? Integer.MIN_VALUE : loc.getY() - dy);
-            double yMax = (dy < 0 ? Integer.MAX_VALUE : loc.getY() + dy);
-            double zMin = (dz < 0 ? Integer.MIN_VALUE : loc.getZ() - dz);
-            double zMax = (dz < 0 ? Integer.MAX_VALUE : loc.getZ() + dz);
-            players = players.stream().filter(player -> player.getLocation().getWorld().equals(world)
-                            && xMin <= player.getLocation().getX()
-                            && player.getLocation().getX() < xMax
-                            && yMin <= player.getLocation().getY()
-                            && player.getLocation().getY() < yMax
-                            && zMin <= player.getLocation().getZ()
-                            && player.getLocation().getZ() < zMax)
-                    .collect(Collectors.toList());
-        }
-        if (name != null) {
-            if (name.endsWith("*")) {
-                players = players.stream().filter(player -> player.getName()
-                                .startsWith(name.substring(0, name.length() - 1)) != excludeName)
-                        .collect(Collectors.toList());
-            } else {
-                players = players.stream().filter(player -> player.getName().equals(name) != excludeName)
-                        .collect(Collectors.toList());
-            }
-        }
-        if (gameMode != null) {
-            players = players.stream().filter(player -> player.getGameMode().equals(gameMode) != excludeGameMode)
-                    .collect(Collectors.toList());
-        }
-        if (minPitch > -90 || maxPitch < 90) {
-            players = players.stream().filter(player -> minPitch <= player.getLocation().getPitch()
-                            && player.getLocation().getPitch() < maxPitch)
-                    .collect(Collectors.toList());
-        }
-        if (minYaw > -180 || maxYaw < 180) {
-            players = players.stream().filter(player -> minYaw <= player.getLocation().getPitch()
-                    && player.getLocation().getPitch() < maxYaw).collect(Collectors.toList());
-        }
-        for(String tag: tags) {
-            players = players.stream().filter(player -> EntitiesPlugin.getEntityServer().getOrCreateMcmePlayer(player).hasTag(tag))
-                    .collect(Collectors.toList());
-        }
-        List<EntitySelectorElement<Player>> sort = players.stream().map(EntitySelectorElement<Player>::new)
-                .collect(Collectors.toList());
-        if (loc != null && (minDistanceSquared > 0 || maxDistanceSquared < Double.MAX_VALUE)) {
-            Location finalLoc = loc;
-            sort = sort.stream()
-                    .filter(element -> {
-                        if (finalLoc.getWorld() == null
-                                || !finalLoc.getWorld().equals(element.getContent().getWorld())) return false;
-                        element.setValue(element.getContent().getLocation().distanceSquared(finalLoc));
-                        return minDistanceSquared <= element.getValue()
-                                && element.getValue() <= maxDistanceSquared;
-                    }).collect(Collectors.toList());
+                DebugManager.warn(
+                        Modules.Selector.select(this.getClass()),
+                        "Selector: " + getSelector() + " Invalid player entity selector type!"
+                );
         }
 
-        //sorting
-        List<Player> result = Collections.emptyList();
-        switch (selectorType) {
-            case NEAREST_PLAYER:
-                result = sort.stream().sorted((one, two) -> (Double.compare(two.getValue(), one.getValue()))).limit(1)
-                        .map(EntitySelectorElement::getContent).collect(Collectors.toList());
-                //DebugManager.verbose(Modules.Selector.select(this.getClass()),
-                //        "Selector: "+getSelector()
-                //                +" Selected: "+(result.size()>0?result.get(0).getName():null));
-                return result;
-            case RANDOM_PLAYER:
-                result = Collections.singletonList(sort.get(new Random().nextInt(sort.size())).getContent());
-                break;
-            case ALL_PLAYERS:
-            case ALL_ENTITIES:
-            case TRIGGER_ENTITY:
-                result = sort.stream().sorted((one, two) -> (Double.compare(two.getValue(), one.getValue()))).limit(limit)
-                        .map(EntitySelectorElement::getContent).collect(Collectors.toList());
-                break;
-        }
-        //DebugManager.verbose(Modules.Selector.select(this.getClass()),
-        //        "Selector!: "+getSelector()
-        //                +" Selected: "+(result.size()>0?result.get(0).getName():null)+" and total of "+result.size());
-        return result;
+        return targets;
     }
 
-    public List<VirtualEntity> selectVirtualEntities(TriggerContext context) {
-        Location loc = context.getLocation();
-        if(loc!=null) {
-            loc = new Location(loc.getWorld(),getAbsolute(loc.getX(),xRelative,x),
-                    getAbsolute(loc.getY(),yRelative,y),
-                    getAbsolute(loc.getZ(),zRelative,z));
-        }
-        List<VirtualEntity> entities = new ArrayList<>();
-        switch(selectorType) {
-            case TRIGGER_ENTITY:
-                if(context.getEntity()!=null && (context.getEntity() instanceof VirtualEntity))
-                    entities.add((VirtualEntity) context.getEntity());
-                //DebugManager.verbose(Modules.Selector.select(this.getClass()),
-                //        "Selector: "+getSelector()+" Selected: "+(context.getEntity()!=null?context.getEntity().getName():null));
-                //return entities;
-                break;
+    public List<RealPlayer> provideMcmePlayerTargets(EntitySelectorContext<T> selectorContext) {
+        return providePlayerTargets(selectorContext).stream()
+                .map(EntitiesPlugin.getEntityServer().getPlayerProvider()::getOrCreateMcmePlayer)
+                .collect(Collectors.toList());
+    }
+
+    public List<VirtualEntity> provideVirtualEntityTargets(EntitySelectorContext<T> selectorContext) {
+        List<VirtualEntity> targets = new ArrayList<>();
+
+        switch (selectorType) {
+            case TRIGGER_ENTITY: {
+                McmeEntity entity = selectorContext.getTriggerContext().getEntity();
+                if (entity instanceof VirtualEntity)
+                    targets.add((VirtualEntity) entity);
+            } break;
             case VIRTUAL_ENTITIES:
             case ALL_ENTITIES:
-                if(hasAreaLimit() && loc != null) {
-                    World world = loc.getWorld();
-                    entities.addAll(EntitiesPlugin.getEntityServer().getEntitiesAt(loc,
-                            (dx<0?Integer.MAX_VALUE:(int)dx),
-                            (dy<0?Integer.MAX_VALUE:(int)dy),
-                            (dz<0?Integer.MAX_VALUE:(int)dz))
-                            .stream().filter(entity -> entity instanceof VirtualEntity
-                                            && entity.getLocation().getWorld().equals(world))
-                            .map(entity -> (VirtualEntity)entity).collect(Collectors.toSet()));
+                Collection<? extends McmeEntity> entities;
+                Location center = selectorContext.getCenter();
+                World world = center == null ? null : center.getWorld();
+
+                if (hasAreaLimit() && center != null) {
+                    // Provide area to the server in hopes of using a location-optimized lookup
+                    entities = EntitiesPlugin.getEntityServer().getEntitiesAt(
+                            center,
+                            dx < 0 ? Integer.MAX_VALUE : (int) dx,
+                            dy < 0 ? Integer.MAX_VALUE : (int) dy,
+                            dz < 0 ? Integer.MAX_VALUE : (int) dz
+                    );
                 } else {
-                    entities.addAll(EntitiesPlugin.getEntityServer().getEntities(VirtualEntity.class)
-                            .stream().map(entity -> {
-                                return (VirtualEntity)entity;
-                            }).collect(Collectors.toSet()));
+                    entities = EntitiesPlugin.getEntityServer().getEntities(VirtualEntity.class);
                 }
+
+                for (McmeEntity entity : entities) {
+                    if (!(entity instanceof VirtualEntity) || entity instanceof SpeechBalloonEntity) continue;
+                    if (world != null && !entity.getLocation().getWorld().equals(world)) continue;
+
+                    targets.add((VirtualEntity) entity);
+                }
+
                 break;
             default:
-                DebugManager.warn(Modules.Selector.select(this.getClass()),
-                        "Selector: "+getSelector()
-                                +" Invalid virtual entity selector type!");
-
-        }
-        entities = entities.stream().filter(entity -> !(entity instanceof SpeechBalloonEntity)
-                                                    && (entityType == null || entity.getType().equals(entityType) != excludeType))
-                .collect(Collectors.toList());
-
-        //filtering
-        if(name!=null) {
-            if(name.endsWith("*")) {
-                entities = entities.stream().filter(entity -> {
-                    return entity.getName()
-                            .startsWith(name.substring(0,name.length()-1)) != excludeName;
-                })
-                        .collect(Collectors.toList());
-            } else {
-                entities = entities.stream().filter(entity -> {
-                    return entity.getName() != null && entity.getName().equals(name) != excludeName;
-                })
-                        .collect(Collectors.toList());
-            }
-        }
-        if(minPitch>-90 || maxPitch < 90) {
-            entities = entities.stream().filter(entity -> minPitch <= entity.getPitch() && entity.getPitch() < maxPitch)
-                    .collect(Collectors.toList());
-        }
-        if(minYaw>-180 || maxYaw < 180) {
-            entities = entities.stream().filter(entity -> minYaw <= entity.getYaw() && entity.getYaw() < maxYaw)
-                    .collect(Collectors.toList());
-        }
-        if(goalType!=null) {
-            entities = entities.stream().filter(entity -> {
-                Goal goal = entity.getGoal();
-                return goal!=null && goal.getType().equals(goalType) != excludeGoalType;
-            }).collect(Collectors.toList());
-        }
-        if(talking != null) {
-            entities = entities.stream().filter(entity -> entity.isTalking() == talking.equals("true"))
-                    .collect(Collectors.toList());
-        }
-        for(String tag: tags) {
-            entities = entities.stream().filter(entity -> entity.hasTag(tag))
-                    .collect(Collectors.toList());
-        }
-        List<EntitySelectorElement<VirtualEntity>> sort = entities.stream().map(EntitySelectorElement<VirtualEntity>::new)
-                .collect(Collectors.toList());
-        if(loc != null && (minDistanceSquared>0 || maxDistanceSquared < Double.MAX_VALUE)) {
-            Location finalLoc = loc;
-            sort = sort.stream()
-                    .filter(element -> {
-                        if(!element.getContent().getLocation().getWorld().equals(finalLoc.getWorld())) return false;
-                        element.setValue(element.getContent().getLocation().distanceSquared(finalLoc));
-                        return minDistanceSquared <= element.getValue()
-                                && element.getValue() <= maxDistanceSquared;
-                    }).collect(Collectors.toList());
+                DebugManager.warn(
+                        Modules.Selector.select(this.getClass()),
+                        "Selector: " + getSelector() + " Invalid virtual entity selector type!"
+                );
         }
 
-        //sorting
-        List<VirtualEntity> result = sort.stream().sorted((one,two) -> (Double.compare(two.getValue(), one.getValue()))).limit(limit)
-                .map(EntitySelectorElement::getContent).collect(Collectors.toList());
-        //DebugManager.verbose(Modules.Selector.select(this.getClass()),
-        //        "Selector: "+getSelector()
-        //                +" Selected: "+(result.size()>0?result.get(0).getName():null)+" and toal of "+result.size());
-        return result;
+        return targets;
+    }
+
+    public Location getAbsoluteLocation(TriggerContext context) {
+        Location location = context.getLocation();
+        if (location == null) return null;
+
+        return new Location(
+                location.getWorld(),
+                getAbsolute(location.getX(), xRelative, x),
+                getAbsolute(location.getY(), yRelative, y),
+                getAbsolute(location.getZ(), zRelative, z)
+        );
+    }
+
+    public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+        for (SelectorCondition<T> condition : conditions) {
+            if (!condition.testEntity(context, entity)) return false;
+        }
+
+        return true;
     }
 
     public boolean hasAreaLimit() {
@@ -434,12 +356,52 @@ public abstract class EntitySelector<T> implements Selector<T> {
         NEAREST, FURTHEST, RANDOM, ARBITRARY;
     }
 
-    public static class EntitySelectorElement<T> {
-        private final T content;
+    /**
+     * Instantiated once for every selector selection.
+     */
+    public static class EntitySelectorContext<T extends Entity> {
+        private final EntitySelector<T> selector;
+        private final TriggerContext context;
+        private final Location location;
+
+        public EntitySelectorContext(EntitySelector<T> selector, TriggerContext context) {
+            this.selector = selector;
+            this.context = context;
+
+            location = selector.getAbsoluteLocation(context);
+        }
+
+        public EntitySelector<T> getSelector() {
+            return selector;
+        }
+
+        public TriggerContext getTriggerContext() {
+            return context;
+        }
+
+        public Location getCenter() {
+            return location;
+        }
+
+        public double getDX() {
+            return selector.dx;
+        }
+
+        public double getDY() {
+            return selector.dy;
+        }
+
+        public double getDZ() {
+            return selector.dz;
+        }
+    }
+
+    public static class EntitySelectorElement<T extends Entity> {
+        private final T entity;
         private double value;
 
-        public EntitySelectorElement(T content) {
-            this.content = content;
+        public EntitySelectorElement(T entity) {
+            this.entity = entity;
         }
 
         public double getValue() {
@@ -450,10 +412,279 @@ public abstract class EntitySelector<T> implements Selector<T> {
             this.value = value;
         }
 
-        public T getContent() {
-            return content;
+        public T getEntity() {
+            return entity;
         }
     }
 
+    private static class Pair<A, B> {
+        private final A first;
+        private final B second;
 
+        public Pair(A first, B second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public A getFirst() {
+            return first;
+        }
+
+        public B getSecond() {
+            return second;
+        }
+    }
+
+    private static final Pattern REGEX_RANGE_INTEGER = Pattern.compile("^(\\d+)\\.\\.(\\d+)$");
+    private static final Pattern REGEX_RANGE_DECIMAL = Pattern.compile("^(\\d+(?:\\.\\d+)?)\\.\\.(\\d+(?:\\.\\d+)?)$");
+
+    public static <R> Pair<R, R> parseRange(String range, Pattern pattern, Function<String, R> parse) {
+        Matcher matcher = pattern.matcher(range);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Invalid range: " + range);
+        }
+
+        R min = null;
+        R max = null;
+
+        String minString = matcher.group(1);
+        String maxString = matcher.group(2);
+
+        if (minString != null && minString.length() > 0) {
+            min = parse.apply(minString);
+        }
+        if (maxString != null && maxString.length() > 0) {
+            max = parse.apply(maxString);
+        }
+
+        return new Pair<>(min, max);
+    }
+
+    public static Pair<Integer, Integer> parseIntegerRange(String range) {
+        return parseRange(range, REGEX_RANGE_INTEGER, Integer::parseInt);
+    }
+
+    public static Pair<Float, Float> parseFloatRange(String range) {
+        return parseRange(range, REGEX_RANGE_DECIMAL, Float::parseFloat);
+    }
+
+    public static Pair<Double, Double> parseDoubleRange(String range) {
+        return parseRange(range, REGEX_RANGE_DECIMAL, Double::parseDouble);
+    }
+
+    public interface SelectorCondition<T extends Entity> {
+        public boolean testEntity(EntitySelectorContext<T> context, T entity);
+    }
+
+    public static class NegatingSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final SelectorCondition<T> innerSelector;
+
+        public NegatingSelectorCondition(SelectorCondition<T> innerSelector) {
+            this.innerSelector = innerSelector;
+        }
+        
+        public SelectorCondition<T> getInnerSelector() {
+            return innerSelector;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            return !innerSelector.testEntity(context, entity);
+        }
+
+        public static <T extends Entity, R extends SelectorCondition<T>> SelectorCondition<T> parse(String value, Function<String, R> parseRest) {
+            if (value.length() > 0 && value.charAt(0) == '!') {
+                return new NegatingSelectorCondition<>(parseRest.apply(value.substring(1)));
+            }
+
+            return parseRest.apply(value);
+        }
+    }
+
+    public static class AreaSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private boolean testPosition(double entity, double center, double tolerance) {
+            if (tolerance < 0) return true;
+
+            return Math.abs(entity - center) <= tolerance;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            Location entityLocation = entity.getLocation();
+            Location centerLocation = context.getCenter();
+
+            if (entityLocation == null || centerLocation == null) return false;
+
+            return testPosition(entityLocation.getX(), centerLocation.getX(), context.getDX())
+                    && testPosition(entityLocation.getY(), centerLocation.getY(), context.getDY())
+                    && testPosition(entityLocation.getZ(), centerLocation.getZ(), context.getDZ())
+                    && entityLocation.getWorld().equals(centerLocation.getWorld());
+        }
+    }
+
+    public static class DistanceSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private double minDistanceSquared = -1d;
+        private double maxDistanceSquared = Double.MAX_VALUE;
+
+        public DistanceSelectorCondition(String range) {
+            Pair<Double, Double> minMax = parseDoubleRange(range);
+
+            if (minMax.getFirst() != null) {
+                minDistanceSquared = minMax.getFirst();
+                minDistanceSquared *= minDistanceSquared;
+            }
+            if (minMax.getSecond() != null) {
+                maxDistanceSquared = minMax.getSecond();
+                maxDistanceSquared *= maxDistanceSquared;
+            }
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            Location entityLocation = entity.getLocation();
+            Location centerLocation = context.getCenter();
+
+            if (entityLocation == null || centerLocation == null) return false;
+
+            double distance = centerLocation.distanceSquared(entityLocation);
+            return distance >= minDistanceSquared && distance <= maxDistanceSquared && entityLocation.getWorld().equals(centerLocation.getWorld());
+        }
+    }
+
+    public static class PitchSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private float minPitch = -90;
+        private float maxPitch = 90;
+
+        public PitchSelectorCondition(String range) {
+            Pair<Float, Float> minMax = parseFloatRange(range);
+
+            if (minMax.getFirst() != null) {
+                minPitch = minMax.getFirst();
+            }
+            if (minMax.getSecond() != null) {
+                maxPitch = minMax.getSecond();
+            }
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            float pitch = entity.getLocation().getPitch();
+            return pitch >= minPitch && pitch <= maxPitch;
+        }
+    }
+
+    public static class YawSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private float minYaw = -180;
+        private float maxYaw = 180;
+
+        public YawSelectorCondition(String range) {
+            Pair<Float, Float> minMax = parseFloatRange(range);
+
+            if (minMax.getFirst() != null) {
+                minYaw = minMax.getFirst();
+            }
+            if (minMax.getSecond() != null) {
+                maxYaw = minMax.getSecond();
+            }
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            float yaw = entity.getLocation().getYaw();
+            return yaw >= minYaw && yaw <= maxYaw;
+        }
+    }
+
+    public static class McmeEntityTypeSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final McmeEntityType type;
+
+        public McmeEntityTypeSelectorCondition(McmeEntityType type) {
+            this.type = type;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            return entity instanceof McmeEntity && type.equals(((McmeEntity) entity).getMcmeEntityType());
+        }
+    }
+
+    public static class NameSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final String name;
+        private final boolean startsWith;
+
+        public NameSelectorCondition(String name) {
+            if (name.length() == 0) {
+                startsWith = false;
+                this.name = "";
+            } else {
+                startsWith = name.charAt(name.length() - 1) == '*';
+                this.name = startsWith ? name.substring(0, name.length() - 1) : name;
+            }
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            if (startsWith) return entity.getName().startsWith(name);
+            return entity.getName().equals(name);
+        }
+    }
+
+    public static class GameModeSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final GameMode gameMode;
+
+        public GameModeSelectorCondition(GameMode gameMode) {
+            this.gameMode = gameMode;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            if (entity instanceof Player) return gameMode.equals(((Player) entity).getGameMode());
+            if (entity instanceof RealPlayer) return gameMode.equals(((RealPlayer) entity).getBukkitPlayer().getGameMode());
+            return false;
+        }
+    }
+
+    public static class GoalTypeSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final GoalType goalType;
+
+        public GoalTypeSelectorCondition(GoalType goalType) {
+            this.goalType = goalType;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            if (!(entity instanceof VirtualEntity)) return false;
+            Goal goal = ((VirtualEntity) entity).getGoal();
+            return goal != null && goalType.equals(goal.getType());
+        }
+    }
+
+    public static class TalkingSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final boolean isTalking;
+
+        public TalkingSelectorCondition(boolean isTalking) {
+            this.isTalking = isTalking;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            if (!(entity instanceof VirtualEntity)) return false;
+            return ((VirtualEntity) entity).isTalking() == isTalking;
+        }
+    }
+
+    public static class TagSelectorCondition<T extends Entity> implements SelectorCondition<T> {
+        private final String tag;
+
+        public TagSelectorCondition(String tag) {
+            this.tag = tag;
+        }
+
+        @Override
+        public boolean testEntity(EntitySelectorContext<T> context, T entity) {
+            if (entity instanceof VirtualEntity) ((VirtualEntity) entity).hasTag(tag);
+            if (entity instanceof RealPlayer) ((RealPlayer) entity).hasTag(tag);
+            return false;
+        }
+    }
 }
